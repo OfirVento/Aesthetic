@@ -43,7 +43,7 @@ CRITICAL CONSTRAINTS:
 - Output a single photograph with the modifications applied naturally.`;
 
   const response = await client.models.generateContent({
-    model: "gemini-2.0-flash-exp",
+    model: "gemini-2.5-flash-image",
     contents: {
       parts: [
         { inlineData: { data: base64Data, mimeType } },
