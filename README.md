@@ -35,6 +35,6 @@ src/
 ├── lib/
 │   ├── store/            # Zustand session store
 │   ├── prompts.ts        # Clinical language prompt builder
-│   └── api/              # External API clients (Nano Banana Pro, Replicate, Claude)
+│   └── api/              # External API clients (Nano Banana Pro, Replicate, Gemini)
 └── types/                # TypeScript definitions
 ```
