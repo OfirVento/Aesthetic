@@ -1,37 +1,12 @@
 import { GoogleGenAI } from "@google/genai";
 
+const API_KEY = "AIzaSyC6i6dGQoOCUBL2uLU4kaj0YqeSWfg94hk";
+
 let ai: GoogleGenAI | null = null;
-let currentKey: string | null = null;
-
-const STORAGE_KEY = "aesthetic_gemini_key";
-
-/**
- * Get the Gemini API key from localStorage
- */
-export function getStoredApiKey(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(STORAGE_KEY);
-}
-
-/**
- * Save the Gemini API key to localStorage
- */
-export function setStoredApiKey(key: string): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY, key);
-  ai = null;
-  currentKey = null;
-}
 
 function getAI(): GoogleGenAI {
-  const apiKey =
-    getStoredApiKey() || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
-  if (!apiKey) {
-    throw new Error("NO_API_KEY");
-  }
-  if (ai && currentKey === apiKey) return ai;
-  ai = new GoogleGenAI({ apiKey });
-  currentKey = apiKey;
+  if (ai) return ai;
+  ai = new GoogleGenAI({ apiKey: API_KEY });
   return ai;
 }
 

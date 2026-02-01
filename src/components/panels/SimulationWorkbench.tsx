@@ -9,7 +9,6 @@ import { generateRegionMask, generateRegionOverlay, maskToDataURL } from "@/lib/
 import { generateEditedImage } from "@/lib/api/gemini";
 import RegionPresets from "@/components/canvas/RegionPresets";
 import ContextualPanel from "@/components/controls/ContextualPanel";
-import ApiKeyPrompt from "@/components/shared/ApiKeyPrompt";
 import ComparisonView from "./ComparisonView";
 import HistoryTray from "./HistoryTray";
 
@@ -131,13 +130,11 @@ export default function SimulationWorkbench() {
       });
     } catch (err) {
       console.error("Simulation error:", err);
-      const msg =
-        err instanceof Error && err.message === "NO_API_KEY"
-          ? "Please enter your Gemini API key above to generate simulations."
-          : err instanceof Error
-            ? err.message
-            : "Generation failed. Check your API key.";
-      setError(msg);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Generation failed. Please try again."
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -149,9 +146,6 @@ export default function SimulationWorkbench() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-stone-100 fade-in">
-      {/* API Key prompt if not configured */}
-      <ApiKeyPrompt onKeySet={() => setError(null)} />
-
       {/* Status bar */}
       {(isDetecting || error) && (
         <div
