@@ -7,6 +7,7 @@ import type {
   RegionControlValues,
   VersionEntry,
 } from "@/types";
+import type { LandmarkPoint } from "@/lib/mediapipe";
 
 interface SessionStore {
   // Navigation
@@ -19,9 +20,17 @@ interface SessionStore {
   activeImage: string | null;
   setActiveImage: (image: string | null) => void;
 
+  // Face detection
+  landmarks: LandmarkPoint[] | null;
+  setLandmarks: (lm: LandmarkPoint[] | null) => void;
+  isDetecting: boolean;
+  setIsDetecting: (val: boolean) => void;
+
   // Region selection
   selectedRegion: FacialRegion | null;
   setSelectedRegion: (region: FacialRegion | null) => void;
+  maskOverlay: string | null;
+  setMaskOverlay: (overlay: string | null) => void;
 
   // Controls
   controlValues: RegionControlValues;
@@ -40,9 +49,9 @@ interface SessionStore {
   isProcessing: boolean;
   setIsProcessing: (val: boolean) => void;
 
-  // Landmarks
-  landmarks: number[][] | null;
-  setLandmarks: (lm: number[][] | null) => void;
+  // Error
+  error: string | null;
+  setError: (error: string | null) => void;
 
   // Reset
   reset: () => void;
@@ -52,12 +61,15 @@ const initialState = {
   step: "scan" as AppStep,
   capturedImage: null,
   activeImage: null,
+  landmarks: null,
+  isDetecting: false,
   selectedRegion: null,
+  maskOverlay: null,
   controlValues: {},
   notes: "",
   history: [],
   isProcessing: false,
-  landmarks: null,
+  error: null,
 };
 
 export const useSessionStore = create<SessionStore>((set) => ({
@@ -66,12 +78,23 @@ export const useSessionStore = create<SessionStore>((set) => ({
   setStep: (step) => set({ step }),
 
   setCapturedImage: (image) =>
-    set({ capturedImage: image, activeImage: null, step: "simulation" }),
+    set({
+      capturedImage: image,
+      activeImage: null,
+      step: "simulation",
+      landmarks: null,
+      isDetecting: true,
+    }),
 
   setActiveImage: (image) => set({ activeImage: image }),
 
+  setLandmarks: (lm) => set({ landmarks: lm, isDetecting: false }),
+  setIsDetecting: (val) => set({ isDetecting: val }),
+
   setSelectedRegion: (region) =>
-    set({ selectedRegion: region, controlValues: {}, notes: "" }),
+    set({ selectedRegion: region, controlValues: {}, notes: "", maskOverlay: null }),
+
+  setMaskOverlay: (overlay) => set({ maskOverlay: overlay }),
 
   setControlValue: (key, value) =>
     set((state) => ({
@@ -90,7 +113,7 @@ export const useSessionStore = create<SessionStore>((set) => ({
 
   setIsProcessing: (val) => set({ isProcessing: val }),
 
-  setLandmarks: (lm) => set({ landmarks: lm }),
+  setError: (error) => set({ error }),
 
   reset: () => set(initialState),
 }));

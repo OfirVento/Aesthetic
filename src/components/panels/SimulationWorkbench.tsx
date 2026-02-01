@@ -1,10 +1,15 @@
 "use client";
 
+import { useEffect, useRef, useCallback } from "react";
 import { useSessionStore } from "@/lib/store/session";
 import { buildInpaintPrompt } from "@/lib/prompts";
 import { REGION_CONFIGS } from "@/components/controls/controlsConfig";
+import { detectFaceLandmarks } from "@/lib/mediapipe";
+import { generateRegionMask, generateRegionOverlay, maskToDataURL } from "@/lib/masks";
+import { generateEditedImage } from "@/lib/api/gemini";
 import RegionPresets from "@/components/canvas/RegionPresets";
 import ContextualPanel from "@/components/controls/ContextualPanel";
+import ApiKeyPrompt from "@/components/shared/ApiKeyPrompt";
 import ComparisonView from "./ComparisonView";
 import HistoryTray from "./HistoryTray";
 
@@ -16,10 +21,68 @@ export default function SimulationWorkbench() {
     controlValues,
     notes,
     isProcessing,
+    isDetecting,
+    landmarks,
+    error,
     setIsProcessing,
+    setLandmarks,
+    setMaskOverlay,
+    setError,
     addVersion,
     setStep,
   } = useSessionStore();
+
+  const imageRef = useRef<HTMLImageElement | null>(null);
+
+  // Run face detection when image is loaded
+  const runFaceDetection = useCallback(async () => {
+    if (!capturedImage || landmarks) return;
+
+    try {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error("Failed to load image"));
+        img.src = capturedImage;
+      });
+      imageRef.current = img;
+
+      const detected = await detectFaceLandmarks(img);
+      if (detected) {
+        setLandmarks(detected);
+        setError(null);
+      } else {
+        setLandmarks(null);
+        setError("No face detected. Try a clearer front-facing photo.");
+      }
+    } catch (err) {
+      console.error("Face detection error:", err);
+      setLandmarks(null);
+      setError("Face detection failed. Continuing without landmarks.");
+    }
+  }, [capturedImage, landmarks, setLandmarks, setError]);
+
+  useEffect(() => {
+    runFaceDetection();
+  }, [runFaceDetection]);
+
+  // Generate mask overlay when region is selected
+  useEffect(() => {
+    if (!selectedRegion || !landmarks || !imageRef.current) {
+      setMaskOverlay(null);
+      return;
+    }
+
+    const { naturalWidth, naturalHeight } = imageRef.current;
+    const overlay = generateRegionOverlay(
+      landmarks,
+      selectedRegion,
+      naturalWidth,
+      naturalHeight
+    );
+    setMaskOverlay(maskToDataURL(overlay));
+  }, [selectedRegion, landmarks, setMaskOverlay]);
 
   const hasValues =
     selectedRegion &&
@@ -32,11 +95,26 @@ export default function SimulationWorkbench() {
     if (!prompt) return;
 
     setIsProcessing(true);
+    setError(null);
 
     try {
-      // TODO: Replace with Nano Banana Pro (Gemini AI) inpainting API call
-      // For now, simulate a delay and use the original image as placeholder
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const sourceImage = activeImage || capturedImage;
+
+      // Generate mask if landmarks available
+      let maskData: string | undefined;
+      if (landmarks && imageRef.current) {
+        const { naturalWidth, naturalHeight } = imageRef.current;
+        const mask = generateRegionMask(
+          landmarks,
+          selectedRegion,
+          naturalWidth,
+          naturalHeight
+        );
+        maskData = maskToDataURL(mask);
+      }
+
+      // Call Gemini API for image generation
+      const outputImage = await generateEditedImage(sourceImage, prompt);
 
       const config = REGION_CONFIGS[selectedRegion];
       addVersion({
@@ -47,11 +125,19 @@ export default function SimulationWorkbench() {
         controlValues: { ...controlValues },
         notes,
         prompt,
-        inputImage: activeImage || capturedImage,
-        outputImage: activeImage || capturedImage, // placeholder until API connected
+        inputImage: sourceImage,
+        outputImage,
+        maskData,
       });
-    } catch (error) {
-      console.error("Simulation error:", error);
+    } catch (err) {
+      console.error("Simulation error:", err);
+      const msg =
+        err instanceof Error && err.message === "NO_API_KEY"
+          ? "Please enter your Gemini API key above to generate simulations."
+          : err instanceof Error
+            ? err.message
+            : "Generation failed. Check your API key.";
+      setError(msg);
     } finally {
       setIsProcessing(false);
     }
@@ -63,23 +149,45 @@ export default function SimulationWorkbench() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-stone-100 fade-in">
+      {/* API Key prompt if not configured */}
+      <ApiKeyPrompt onKeySet={() => setError(null)} />
+
+      {/* Status bar */}
+      {(isDetecting || error) && (
+        <div
+          className={`px-6 py-2 text-[10px] font-black uppercase tracking-widest text-center shrink-0 ${
+            error
+              ? "bg-red-50 text-red-500 border-b border-red-100"
+              : "bg-blue-50 text-blue-500 border-b border-blue-100"
+          }`}
+        >
+          {isDetecting
+            ? "Detecting facial landmarks..."
+            : error}
+        </div>
+      )}
+
+      {/* Landmark detection success */}
+      {landmarks && !isDetecting && !error && (
+        <div className="px-6 py-2 text-[10px] font-black uppercase tracking-widest text-center bg-emerald-50 text-emerald-600 border-b border-emerald-100 shrink-0">
+          Face detected — {landmarks.length} landmarks mapped. Select a region to begin.
+        </div>
+      )}
+
       {/* Toolbar: Region presets + tools */}
       <div className="bg-white border-b border-stone-200 px-6 py-3 flex items-center gap-4 shrink-0">
         <RegionPresets />
         <div className="ml-auto flex items-center gap-2">
-          {/* Brush / Lasso tools will go here in Phase 1.4 */}
           <span className="text-[9px] font-black uppercase tracking-widest text-stone-300">
-            Tools
+            {landmarks ? "Presets Active" : "Loading..."}
           </span>
         </div>
       </div>
 
       {/* Main content: Comparison + Contextual Panel */}
       <div className="flex-1 flex overflow-hidden min-h-0">
-        {/* Side-by-side comparison */}
         <ComparisonView />
 
-        {/* Contextual controls floating panel */}
         {selectedRegion && (
           <div className="w-80 p-4 overflow-y-auto no-scrollbar shrink-0">
             <ContextualPanel />
@@ -99,7 +207,7 @@ export default function SimulationWorkbench() {
                 : "bg-stone-900 text-white hover:bg-black hover:shadow-stone-900/20"
             }`}
           >
-            {isProcessing ? "Processing..." : "Apply Simulation"}
+            {isProcessing ? "Generating..." : "Apply Simulation"}
           </button>
           <button
             onClick={handleFinalize}

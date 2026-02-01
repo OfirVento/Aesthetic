@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@google/genai": "^1.39.0",
     "@mediapipe/tasks-vision": "^0.10.32",
     "fabric": "^7.1.0",
     "lucide-react": "^0.563.0",

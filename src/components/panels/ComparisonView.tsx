@@ -3,7 +3,8 @@
 import { useSessionStore } from "@/lib/store/session";
 
 export default function ComparisonView() {
-  const { capturedImage, activeImage, isProcessing } = useSessionStore();
+  const { capturedImage, activeImage, isProcessing, maskOverlay, selectedRegion } =
+    useSessionStore();
 
   return (
     <div className="flex-1 p-6 flex gap-6 min-h-0 items-stretch justify-center">
@@ -14,11 +15,21 @@ export default function ComparisonView() {
         </span>
         <div className="flex-1 rounded-[32px] overflow-hidden bg-white shadow-xl border border-stone-200 relative min-h-0 group">
           {capturedImage ? (
-            <img
-              src={capturedImage}
-              className="w-full h-full object-contain group-hover:scale-[1.02] transition-transform duration-1000"
-              alt="Baseline"
-            />
+            <>
+              <img
+                src={capturedImage}
+                className="w-full h-full object-contain group-hover:scale-[1.02] transition-transform duration-1000"
+                alt="Baseline"
+              />
+              {/* Mask overlay on baseline image */}
+              {maskOverlay && selectedRegion && (
+                <img
+                  src={maskOverlay}
+                  className="absolute inset-0 w-full h-full object-contain pointer-events-none transition-opacity duration-300"
+                  alt="Region mask"
+                />
+              )}
+            </>
           ) : (
             <div className="w-full h-full flex items-center justify-center text-stone-300 text-sm">
               No image
@@ -27,6 +38,11 @@ export default function ComparisonView() {
           <div className="absolute top-5 left-5 px-4 py-2 bg-white/90 backdrop-blur-md rounded-full border border-stone-100 text-[10px] font-black tracking-widest uppercase text-stone-800 shadow-sm">
             Original
           </div>
+          {selectedRegion && (
+            <div className="absolute bottom-5 left-1/2 -translate-x-1/2 px-4 py-2 bg-blue-500/90 backdrop-blur-md rounded-full text-[9px] font-black tracking-widest uppercase text-white shadow-lg">
+              Region Selected
+            </div>
+          )}
         </div>
       </div>
 
@@ -41,7 +57,7 @@ export default function ComparisonView() {
               <div className="flex flex-col items-center gap-3">
                 <div className="w-10 h-10 border-2 border-stone-900 border-t-transparent rounded-full animate-spin" />
                 <span className="text-[10px] font-black uppercase tracking-[0.4em] text-stone-900/60">
-                  Simulating...
+                  Generating...
                 </span>
               </div>
             </div>
