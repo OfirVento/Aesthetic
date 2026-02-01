@@ -7,7 +7,7 @@ Clinical Aesthetic Visualization Workbench — a tool for aesthetic medicine pra
 - **Next.js 14** (App Router) + TypeScript + Tailwind CSS
 - **Fabric.js** — Canvas mask drawing
 - **MediaPipe Face Mesh** — In-browser face landmark detection
-- **FLUX.1 Fill via Fal.ai** — Inpainting (coming)
+- **Nano Banana Pro** — Gemini AI image generation & photo editing (coming)
 - **Zustand** — Client state management
 
 ## Getting Started
@@ -35,6 +35,6 @@ src/
 ├── lib/
 │   ├── store/            # Zustand session store
 │   ├── prompts.ts        # Clinical language prompt builder
-│   └── api/              # External API clients (Fal, Replicate, Claude)
+│   └── api/              # External API clients (Nano Banana Pro, Replicate, Claude)
 └── types/                # TypeScript definitions
 ```

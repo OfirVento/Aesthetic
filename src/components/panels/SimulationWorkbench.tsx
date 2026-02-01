@@ -34,7 +34,7 @@ export default function SimulationWorkbench() {
     setIsProcessing(true);
 
     try {
-      // TODO: Replace with FLUX.1 inpainting API call
+      // TODO: Replace with Nano Banana Pro (Gemini AI) inpainting API call
       // For now, simulate a delay and use the original image as placeholder
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
