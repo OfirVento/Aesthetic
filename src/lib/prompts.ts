@@ -1,18 +1,30 @@
 import type { FacialRegion, RegionControlValues } from "@/types";
 import { REGION_CONFIGS } from "@/components/controls/controlsConfig";
 
+/** Maps region to a specific anatomical location description for Gemini */
+const REGION_LOCATION: Record<FacialRegion, string> = {
+  lips: "the lips (upper lip, lower lip, cupid's bow, and vermillion border)",
+  jawline: "the jawline (mandibular border from ear to chin on both sides)",
+  chin: "the chin (mentalis region, lower face below the lower lip)",
+  cheeks: "the cheeks (malar and zygomatic area, mid-face)",
+  nasolabial: "the nasolabial folds (smile lines running from nose to mouth corners)",
+  upperFace: "the upper face (forehead, glabella, and brow area)",
+  tearTroughs: "the tear troughs (under-eye hollows between lower eyelid and cheek)",
+  nose: "the nose (nasal bridge, tip, and nostrils)",
+};
+
 function intensityLabel(value: number): string {
-  if (value === 0) return "no change to";
-  if (value <= 30) return "subtle";
-  if (value <= 60) return "moderate";
-  if (value <= 85) return "enhanced";
-  return "maximum";
+  if (value === 0) return "";
+  if (value <= 25) return "slightly";
+  if (value <= 50) return "noticeably";
+  if (value <= 75) return "significantly";
+  return "dramatically";
 }
 
-function describeControl(label: string, value: number): string {
+function describeControl(label: string, description: string, value: number): string {
   if (value === 0) return "";
   const intensity = intensityLabel(value);
-  return `${intensity} ${label.toLowerCase()} (${value}%)`;
+  return `- ${intensity} increase ${label.toLowerCase()} (${description}) — set to ${value}%`;
 }
 
 export function buildInpaintPrompt(
@@ -24,19 +36,22 @@ export function buildInpaintPrompt(
   if (!config) return "";
 
   const descriptions = config.controls
-    .map((c) => describeControl(c.label, controlValues[c.key] ?? 0))
+    .map((c) => describeControl(c.label, c.description, controlValues[c.key] ?? 0))
     .filter(Boolean);
 
   if (descriptions.length === 0) return "";
 
-  let prompt = `${config.label}: ${descriptions.join(", ")}.`;
+  const location = REGION_LOCATION[region];
+
+  let prompt = `EDIT REGION: ${location}\n\n`;
+  prompt += `REQUIRED MODIFICATIONS (these changes MUST be clearly visible in the output):\n`;
+  prompt += descriptions.join("\n");
 
   if (notes?.trim()) {
-    prompt += ` ${notes.trim()}`;
+    prompt += `\n\nADDITIONAL NOTES: ${notes.trim()}`;
   }
 
-  prompt += `\nMaintain exact identity, lighting, and all areas outside the mask.`;
-  prompt += `\nMedical aesthetic visualization, photorealistic, subtle natural result.`;
+  prompt += `\n\nIMPORTANT: The changes should be clearly visible and obvious when comparing the output to the input. Do NOT leave the image unchanged.`;
 
   return prompt;
 }

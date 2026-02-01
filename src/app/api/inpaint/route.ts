@@ -34,17 +34,15 @@ export async function POST(req: NextRequest) {
     const mimeMatch = imageDataUrl.match(/^data:(image\/\w+);base64,/);
     const mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
 
-    const fullPrompt = `SYSTEM INSTRUCTION: You are an expert medical aesthetic visualization engine.
-OBJECTIVE: Apply the following precise clinical modifications to the provided face photograph.
+    const fullPrompt = `You are a medical aesthetic visualization tool. Edit this face photograph by applying the modifications described below. Output ONLY the edited photograph.
 
 ${prompt}
 
-CRITICAL CONSTRAINTS:
-- Maintain 100% identity preservation of eyes, hair, clothing, and background.
-- Only modify the specific region described above.
-- Ensure lighting and shadows remain anatomically consistent with the modifications.
-- The result must be photorealistic, not stylized or filtered.
-- Output a single photograph with the modifications applied naturally.`;
+Rules:
+- Apply the requested changes so they are CLEARLY VISIBLE in the output image.
+- Keep the person's identity, background, hair, clothing, and all unmentioned areas exactly the same.
+- The edit must look photorealistic and natural, as if the person actually had the procedure.
+- Do NOT return the original image unchanged. The modifications MUST be applied.`;
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-image",
@@ -55,7 +53,7 @@ CRITICAL CONSTRAINTS:
         ],
       },
       config: {
-        responseModalities: ["image", "text"],
+        responseModalities: ["IMAGE", "TEXT"],
       },
     });
 
@@ -70,8 +68,12 @@ CRITICAL CONSTRAINTS:
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const imagePart = parts.find((p: any) => p.inlineData);
     if (!imagePart?.inlineData?.data) {
+      // Check if Gemini returned text instead of an image
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const textPart = parts.find((p: any) => p.text);
+      const textMsg = textPart?.text || "No image generated";
       return NextResponse.json(
-        { error: "No image in Gemini response" },
+        { error: `Gemini did not return an image: ${textMsg}` },
         { status: 502 }
       );
     }
