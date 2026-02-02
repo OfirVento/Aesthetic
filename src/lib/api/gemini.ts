@@ -6,6 +6,10 @@ export async function generateEditedImage(
   imageDataUrl: string,
   prompt: string
 ): Promise<string> {
+  console.log("=== CLIENT: Sending to /api/inpaint ===");
+  console.log("Prompt:", prompt);
+  console.log("Image data length:", imageDataUrl.length);
+
   const res = await fetch("/api/inpaint", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -18,5 +22,12 @@ export async function generateEditedImage(
   }
 
   const data = await res.json();
+
+  if (data.debugPrompt) {
+    console.log("=== FULL PROMPT SENT TO GEMINI ===");
+    console.log(data.debugPrompt);
+    console.log("==================================");
+  }
+
   return data.imageDataUrl;
 }

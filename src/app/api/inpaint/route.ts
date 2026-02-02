@@ -57,8 +57,8 @@ RULES:
       model: "gemini-2.5-flash-image",
       contents: {
         parts: [
-          { inlineData: { data: base64Data, mimeType } },
           { text: fullPrompt },
+          { inlineData: { data: base64Data, mimeType } },
         ],
       },
       config: {
@@ -97,6 +97,7 @@ RULES:
     console.log("=== INPAINT SUCCESS: Image generated ===");
     return NextResponse.json({
       imageDataUrl: `data:image/png;base64,${imagePart.inlineData.data}`,
+      debugPrompt: fullPrompt,
     });
   } catch (err) {
     console.error("Inpaint API error:", err);
