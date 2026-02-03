@@ -16,7 +16,6 @@ import HistoryTray from "./HistoryTray";
 export default function SimulationWorkbench() {
   const {
     capturedImage,
-    activeImage,
     selectedRegion,
     controlValues,
     notes,
@@ -104,7 +103,8 @@ export default function SimulationWorkbench() {
     setError(null);
 
     try {
-      const sourceImage = activeImage || capturedImage;
+      // Always use the original captured image as the base
+      const sourceImage = capturedImage;
 
       // Generate mask if landmarks available
       let maskData: string | undefined;
