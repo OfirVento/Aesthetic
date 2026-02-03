@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useCallback } from "react";
 import { useSessionStore } from "@/lib/store/session";
-import { buildInpaintPrompt } from "@/lib/prompts";
+import { usePromptsStore } from "@/lib/store/prompts";
+import { buildInpaintPrompt, buildFullPrompt } from "@/lib/prompts";
 import { REGION_CONFIGS } from "@/components/controls/controlsConfig";
 import { detectFaceLandmarks } from "@/lib/mediapipe";
 import { generateRegionMask, generateRegionOverlay, maskToDataURL } from "@/lib/masks";
@@ -30,6 +31,8 @@ export default function SimulationWorkbench() {
     addVersion,
     setStep,
   } = useSessionStore();
+
+  const { prompts } = usePromptsStore();
 
   const imageRef = useRef<HTMLImageElement | null>(null);
 
@@ -90,8 +93,12 @@ export default function SimulationWorkbench() {
   const handleApply = async () => {
     if (!selectedRegion || !hasValues || !capturedImage) return;
 
-    const prompt = buildInpaintPrompt(selectedRegion, controlValues, notes);
-    if (!prompt) return;
+    // Build the task prompt using configurable prompts from store
+    const taskPrompt = buildInpaintPrompt(selectedRegion, controlValues, prompts, notes);
+    if (!taskPrompt) return;
+
+    // Build the full prompt with system wrapper
+    const fullPrompt = buildFullPrompt(taskPrompt, prompts.systemPrompt);
 
     setIsProcessing(true);
     setError(null);
@@ -113,7 +120,7 @@ export default function SimulationWorkbench() {
       }
 
       // Call Gemini API for image generation
-      const outputImage = await generateEditedImage(sourceImage, prompt);
+      const outputImage = await generateEditedImage(sourceImage, fullPrompt);
 
       const config = REGION_CONFIGS[selectedRegion];
       addVersion({
@@ -123,7 +130,7 @@ export default function SimulationWorkbench() {
         regionLabel: config.label,
         controlValues: { ...controlValues },
         notes,
-        prompt,
+        prompt: fullPrompt,
         inputImage: sourceImage,
         outputImage,
         maskData,

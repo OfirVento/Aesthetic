@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     }
 
     console.log("=== INPAINT REQUEST ===");
-    console.log("Prompt being sent to Gemini:");
+    console.log("Full prompt being sent to Gemini:");
     console.log(prompt);
     console.log("Image data length:", imageDataUrl.length);
     console.log("=======================");
@@ -40,24 +40,12 @@ export async function POST(req: NextRequest) {
     const mimeMatch = imageDataUrl.match(/^data:(image\/\w+);base64,/);
     const mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
 
-    const fullPrompt = `Edit this face photograph. You MUST modify the image and return a new version with the changes applied. Do NOT return the original image unchanged.
-
-${prompt}
-
-RULES:
-- You MUST apply the changes described above. The output MUST look visibly different from the input.
-- Keep the person's identity recognizable — same person, same background, same hair, same clothing.
-- Only modify the specific facial area mentioned above.
-- The result must be photorealistic, as if the person actually had this cosmetic procedure.
-- Return ONLY the edited photograph as an image.`;
-
-    console.log("Full prompt sent to Gemini:", fullPrompt);
-
+    // Send the prompt directly - client has already built the full prompt
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-image-preview",
       contents: {
         parts: [
-          { text: fullPrompt },
+          { text: prompt },
           { inlineData: { data: base64Data, mimeType } },
         ],
       },
@@ -97,7 +85,7 @@ RULES:
     console.log("=== INPAINT SUCCESS: Image generated ===");
     return NextResponse.json({
       imageDataUrl: `data:image/png;base64,${imagePart.inlineData.data}`,
-      debugPrompt: fullPrompt,
+      debugPrompt: prompt,
     });
   } catch (err) {
     console.error("Inpaint API error:", err);
