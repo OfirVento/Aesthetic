@@ -2,58 +2,58 @@ import type { FacialRegion } from "@/types";
 import type { LandmarkPoint } from "./mediapipe";
 
 // MediaPipe landmark indices for each facial region
-// These are approximate groupings — verified against MediaPipe face mesh topology
+// Points are in ORDER to form a closed polygon path (not scattered)
 const REGION_LANDMARKS: Record<FacialRegion, number[]> = {
   lips: [
-    // Outer lips
+    // Outer lip contour - clockwise from left corner
     61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291,
-    // Inner lips
-    78, 95, 88, 178, 87, 14, 317, 402, 318, 324, 308,
-    // Additional lip area
-    185, 40, 39, 37, 0, 267, 269, 270, 409,
+    409, 270, 269, 267, 0, 37, 39, 40, 185, 61
   ],
   jawline: [
-    // Left jawline
-    132, 136, 150, 149, 176, 148, 152,
-    // Right jawline
-    361, 365, 379, 378, 400, 377, 152,
-    // Chin area connects
-    175, 199, 200, 201, 202, 204, 421, 418, 424,
+    // Jawline contour - from left ear to right ear along jaw
+    234, 127, 162, 21, 54, 103, 67, 109, 10, 338, 297, 332, 284, 251, 389, 356, 454,
+    323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234
   ],
   chin: [
-    152, 148, 176, 149, 150, 136, 172, 58, 132,
-    377, 400, 378, 379, 365, 397, 288, 361,
-    175, 199, 200,
+    // Chin area - lower jaw region
+    152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162,
+    21, 54, 103, 67, 109, 10, 338, 297, 332, 284, 251, 389, 356,
+    454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152
   ],
   cheeks: [
-    // Left cheek
-    116, 117, 118, 119, 120, 121, 122, 123, 187, 192, 213, 147, 205, 206,
-    // Right cheek
-    345, 346, 347, 348, 349, 350, 351, 352, 411, 416, 433, 376, 425, 426,
+    // Left cheek + right cheek as one region
+    // Left cheek contour
+    234, 93, 132, 58, 172, 136, 150, 149, 176, 148, 152,
+    // Connect to right
+    377, 400, 378, 379, 365, 397, 288, 361, 323, 454,
+    // Back to start via upper cheek
+    356, 389, 251, 284, 332, 297, 338, 10, 109, 67, 103, 54, 21, 162, 127, 234
   ],
   nasolabial: [
-    // Left nasolabial
-    92, 93, 94, 95, 96, 97, 98, 165, 167, 164,
-    // Right nasolabial
-    322, 323, 324, 325, 326, 327, 328, 391, 393, 390,
+    // Left nasolabial fold line + right
+    // This is a thin area, so we trace along the fold
+    205, 50, 117, 118, 119, 120, 121, 128, 245, 193, 168,
+    417, 465, 357, 350, 349, 348, 347, 346, 280, 425, 205
   ],
   upperFace: [
-    // Forehead + brow area
-    66, 67, 68, 69, 70, 63, 105, 104, 103, 54, 21, 162, 127,
-    296, 297, 298, 299, 300, 293, 334, 333, 332, 284, 251, 389, 356,
-    10, 338, 297, 67, 109,
+    // Forehead + brow area contour
+    10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288,
+    397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136,
+    172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109, 10
   ],
   tearTroughs: [
+    // Under-eye area - left and right tear troughs
     // Left tear trough
-    111, 112, 113, 114, 117, 118, 119, 120, 121,
+    226, 247, 30, 29, 27, 28, 56, 190, 243, 112, 26, 22, 23, 24, 110, 25,
     // Right tear trough
-    340, 341, 342, 343, 346, 347, 348, 349, 350,
+    255, 339, 254, 253, 252, 256, 341, 463, 414, 286, 258, 257, 259, 260, 467, 446, 226
   ],
   nose: [
-    // Nose bridge + tip + nostrils
-    1, 2, 3, 4, 5, 6, 168, 197, 195, 196,
-    419, 420, 456, 248, 281, 275, 274, 273,
-    45, 51, 3, 196, 174, 188, 122, 6,
+    // Nose contour - bridge, tip, nostrils
+    168, 6, 197, 195, 5, 4, 1, 19, 94, 2,
+    98, 97, 99, 100, 129, 49, 48, 115, 131, 134, 51, 5,
+    281, 363, 360, 279, 278, 294, 327, 326, 328, 2,
+    326, 327, 294, 278, 279, 420, 429, 351, 417, 465, 168
   ],
 };
 
@@ -66,7 +66,7 @@ export function generateRegionMask(
   region: FacialRegion,
   width: number,
   height: number,
-  featherRadius: number = 12
+  featherRadius: number = 8
 ): HTMLCanvasElement {
   const canvas = document.createElement("canvas");
   canvas.width = width;
@@ -80,7 +80,7 @@ export function generateRegionMask(
   const indices = REGION_LANDMARKS[region];
   if (!indices || indices.length === 0) return canvas;
 
-  // Get the points for this region
+  // Get the points for this region in order
   const points = indices
     .filter((i) => i < landmarks.length)
     .map((i) => ({
@@ -90,15 +90,12 @@ export function generateRegionMask(
 
   if (points.length < 3) return canvas;
 
-  // Compute convex hull for a clean mask shape
-  const hull = convexHull(points);
-
-  // Draw filled region in white
+  // Draw filled polygon directly (no convex hull - preserve exact shape)
   ctx.fillStyle = "white";
   ctx.beginPath();
-  ctx.moveTo(hull[0].x, hull[0].y);
-  for (let i = 1; i < hull.length; i++) {
-    ctx.lineTo(hull[i].x, hull[i].y);
+  ctx.moveTo(points[0].x, points[0].y);
+  for (let i = 1; i < points.length; i++) {
+    ctx.lineTo(points[i].x, points[i].y);
   }
   ctx.closePath();
   ctx.fill();
@@ -114,7 +111,7 @@ export function generateRegionMask(
 }
 
 /**
- * Generate a mask overlay for visual feedback (translucent colored region)
+ * Generate a mask overlay for visual feedback (translucent colored region with dashed outline)
  */
 export function generateRegionOverlay(
   landmarks: LandmarkPoint[],
@@ -139,17 +136,16 @@ export function generateRegionOverlay(
 
   if (points.length < 3) return canvas;
 
-  const hull = convexHull(points);
-
-  // Semi-transparent blue overlay
-  ctx.fillStyle = "rgba(59, 130, 246, 0.25)";
-  ctx.strokeStyle = "rgba(59, 130, 246, 0.8)";
-  ctx.lineWidth = 2;
+  // Draw filled polygon directly (no convex hull)
+  ctx.fillStyle = "rgba(59, 130, 246, 0.2)";
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([5, 5]); // Dashed line like the reference
 
   ctx.beginPath();
-  ctx.moveTo(hull[0].x, hull[0].y);
-  for (let i = 1; i < hull.length; i++) {
-    ctx.lineTo(hull[i].x, hull[i].y);
+  ctx.moveTo(points[0].x, points[0].y);
+  for (let i = 1; i < points.length; i++) {
+    ctx.lineTo(points[i].x, points[i].y);
   }
   ctx.closePath();
   ctx.fill();
@@ -163,42 +159,4 @@ export function generateRegionOverlay(
  */
 export function maskToDataURL(maskCanvas: HTMLCanvasElement): string {
   return maskCanvas.toDataURL("image/png");
-}
-
-// Simple convex hull (Graham scan)
-function convexHull(
-  points: { x: number; y: number }[]
-): { x: number; y: number }[] {
-  if (points.length <= 3) return points;
-
-  // Find the bottommost point (and leftmost if tied)
-  let pivot = points[0];
-  for (const p of points) {
-    if (p.y > pivot.y || (p.y === pivot.y && p.x < pivot.x)) {
-      pivot = p;
-    }
-  }
-
-  // Sort by polar angle with respect to pivot
-  const sorted = points
-    .filter((p) => p !== pivot)
-    .sort((a, b) => {
-      const angleA = Math.atan2(a.y - pivot.y, a.x - pivot.x);
-      const angleB = Math.atan2(b.y - pivot.y, b.x - pivot.x);
-      return angleA - angleB;
-    });
-
-  const hull = [pivot];
-  for (const p of sorted) {
-    while (hull.length > 1) {
-      const a = hull[hull.length - 2];
-      const b = hull[hull.length - 1];
-      const cross = (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x);
-      if (cross <= 0) hull.pop();
-      else break;
-    }
-    hull.push(p);
-  }
-
-  return hull;
 }
