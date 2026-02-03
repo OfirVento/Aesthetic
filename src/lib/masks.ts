@@ -10,50 +10,51 @@ const REGION_LANDMARKS: Record<FacialRegion, number[]> = {
     409, 270, 269, 267, 0, 37, 39, 40, 185, 61
   ],
   jawline: [
-    // Jawline contour - from left ear to right ear along jaw
-    234, 127, 162, 21, 54, 103, 67, 109, 10, 338, 297, 332, 284, 251, 389, 356, 454,
-    323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234
+    // Jawline - narrow band along the jaw edge only
+    // Start at left jaw angle, go along jaw to chin, then to right jaw angle
+    // Outer edge (lower)
+    172, 136, 150, 149, 176, 148, 152, 377, 400, 378, 379, 365, 397, 288,
+    // Inner edge (upper) - creates a narrow strip
+    361, 435, 401, 366, 447, 264, 34, 227, 137, 177, 215, 172
   ],
   chin: [
-    // Chin area - lower jaw region
-    152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162,
-    21, 54, 103, 67, 109, 10, 338, 297, 332, 284, 251, 389, 356,
-    454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152
+    // Chin - just the mentalis region below the lower lip
+    // Small focused area at bottom of face
+    175, 171, 152, 396, 400, 377, 152, 148, 176, 140, 171, 175,
+    199, 200, 201, 202, 211, 212, 216, 207, 187, 147, 213, 192,
+    214, 135, 169, 170, 171, 175
   ],
   cheeks: [
-    // Left cheek + right cheek as one region
-    // Left cheek contour
-    234, 93, 132, 58, 172, 136, 150, 149, 176, 148, 152,
-    // Connect to right
-    377, 400, 378, 379, 365, 397, 288, 361, 323, 454,
-    // Back to start via upper cheek
-    356, 389, 251, 284, 332, 297, 338, 10, 109, 67, 103, 54, 21, 162, 127, 234
+    // Cheeks - malar/zygomatic region (mid-face, below eyes, beside nose)
+    // Left cheek area
+    123, 187, 147, 213, 192, 214, 135, 170, 171, 140, 176, 149,
+    150, 136, 172, 215, 177, 137, 227, 34, 143, 116, 123
   ],
   nasolabial: [
-    // Left nasolabial fold line + right
-    // This is a thin area, so we trace along the fold
-    205, 50, 117, 118, 119, 120, 121, 128, 245, 193, 168,
-    417, 465, 357, 350, 349, 348, 347, 346, 280, 425, 205
+    // Nasolabial folds - lines from nose to mouth corners
+    // Left side
+    102, 48, 115, 220, 45, 4, 275, 440, 344, 278,
+    // Loop through right side
+    331, 294, 439, 278, 294, 455, 305, 289, 102
   ],
   upperFace: [
-    // Forehead + brow area contour
-    10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288,
-    397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136,
-    172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109, 10
+    // Forehead - area above eyebrows only
+    // Along brow line
+    70, 63, 105, 66, 107, 55, 8, 285, 336, 296, 334, 293, 300,
+    // Top of forehead (approximated since MediaPipe stops at hairline)
+    151, 108, 69, 104, 68, 71, 21, 54, 103, 67, 109, 10,
+    338, 297, 332, 284, 251, 301, 298, 333, 299, 337, 151,
+    300, 293, 334, 296, 336, 285, 8, 55, 107, 66, 105, 63, 70
   ],
   tearTroughs: [
-    // Under-eye area - left and right tear troughs
+    // Under-eye hollows - small area below eyes
     // Left tear trough
-    226, 247, 30, 29, 27, 28, 56, 190, 243, 112, 26, 22, 23, 24, 110, 25,
-    // Right tear trough
-    255, 339, 254, 253, 252, 256, 341, 463, 414, 286, 258, 257, 259, 260, 467, 446, 226
+    111, 117, 118, 119, 120, 121, 128, 245, 193, 122, 111
   ],
   nose: [
-    // Nose contour - bridge, tip, nostrils
+    // Nose - bridge, tip, nostrils
     168, 6, 197, 195, 5, 4, 1, 19, 94, 2,
-    98, 97, 99, 100, 129, 49, 48, 115, 131, 134, 51, 5,
-    281, 363, 360, 279, 278, 294, 327, 326, 328, 2,
-    326, 327, 294, 278, 279, 420, 429, 351, 417, 465, 168
+    98, 326, 327, 278, 279, 420, 399, 351, 168
   ],
 };
 
