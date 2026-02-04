@@ -3,7 +3,8 @@
 import { create } from "zustand";
 import type {
   AppStep,
-  FacialRegion,
+  RegionCategory,
+  SubRegion,
   RegionControlValues,
   VersionEntry,
 } from "@/types";
@@ -26,9 +27,19 @@ interface SessionStore {
   isDetecting: boolean;
   setIsDetecting: (val: boolean) => void;
 
-  // Region selection
-  selectedRegion: FacialRegion | null;
-  setSelectedRegion: (region: FacialRegion | null) => void;
+  // Hierarchical region selection
+  selectedCategory: RegionCategory | null;
+  setSelectedCategory: (category: RegionCategory | null) => void;
+  selectedSubRegion: SubRegion | null;
+  setSelectedSubRegion: (subRegion: SubRegion | null) => void;
+  expandedCategories: RegionCategory[];
+  toggleCategoryExpanded: (category: RegionCategory) => void;
+  acknowledgedGatedCategories: RegionCategory[];
+  acknowledgeGatedCategory: (category: RegionCategory) => void;
+
+  // Legacy - kept for compatibility (maps to selectedSubRegion)
+  selectedRegion: SubRegion | null;
+  setSelectedRegion: (region: SubRegion | null) => void;
   maskOverlay: string | null;
   setMaskOverlay: (overlay: string | null) => void;
 
@@ -63,11 +74,17 @@ const initialState = {
   activeImage: null,
   landmarks: null,
   isDetecting: false,
-  selectedRegion: null,
+  // Hierarchical selection
+  selectedCategory: null as RegionCategory | null,
+  selectedSubRegion: null as SubRegion | null,
+  expandedCategories: [] as RegionCategory[],
+  acknowledgedGatedCategories: [] as RegionCategory[],
+  // Legacy
+  selectedRegion: null as SubRegion | null,
   maskOverlay: null,
   controlValues: {},
   notes: "",
-  history: [],
+  history: [] as VersionEntry[],
   isProcessing: false,
   error: null,
 };
@@ -91,8 +108,47 @@ export const useSessionStore = create<SessionStore>((set) => ({
   setLandmarks: (lm) => set({ landmarks: lm, isDetecting: false }),
   setIsDetecting: (val) => set({ isDetecting: val }),
 
+  // Hierarchical selection
+  setSelectedCategory: (category) =>
+    set((state) => ({
+      selectedCategory: category,
+      expandedCategories: category && !state.expandedCategories.includes(category)
+        ? [...state.expandedCategories, category]
+        : state.expandedCategories,
+    })),
+
+  setSelectedSubRegion: (subRegion) =>
+    set({
+      selectedSubRegion: subRegion,
+      selectedRegion: subRegion, // Keep legacy field in sync
+      controlValues: {},
+      notes: "",
+      maskOverlay: null,
+    }),
+
+  toggleCategoryExpanded: (category) =>
+    set((state) => ({
+      expandedCategories: state.expandedCategories.includes(category)
+        ? state.expandedCategories.filter((c) => c !== category)
+        : [...state.expandedCategories, category],
+    })),
+
+  acknowledgeGatedCategory: (category) =>
+    set((state) => ({
+      acknowledgedGatedCategories: state.acknowledgedGatedCategories.includes(category)
+        ? state.acknowledgedGatedCategories
+        : [...state.acknowledgedGatedCategories, category],
+    })),
+
+  // Legacy - maps to setSelectedSubRegion
   setSelectedRegion: (region) =>
-    set({ selectedRegion: region, controlValues: {}, notes: "", maskOverlay: null }),
+    set({
+      selectedRegion: region,
+      selectedSubRegion: region,
+      controlValues: {},
+      notes: "",
+      maskOverlay: null,
+    }),
 
   setMaskOverlay: (overlay) => set({ maskOverlay: overlay }),
 

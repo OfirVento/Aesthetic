@@ -1,11 +1,11 @@
 "use client";
 
 import { useSessionStore } from "@/lib/store/session";
-import { REGION_CONFIGS } from "./controlsConfig";
+import { getSubRegionConfig, getCategoryForSubRegion } from "./controlsConfig";
 
 export default function ContextualPanel() {
   const {
-    selectedRegion,
+    selectedSubRegion,
     controlValues,
     setControlValue,
     notes,
@@ -13,17 +13,23 @@ export default function ContextualPanel() {
     isProcessing,
   } = useSessionStore();
 
-  if (!selectedRegion) return null;
+  if (!selectedSubRegion) return null;
 
-  const config = REGION_CONFIGS[selectedRegion];
+  const config = getSubRegionConfig(selectedSubRegion);
+  const category = getCategoryForSubRegion(selectedSubRegion);
   if (!config) return null;
 
   return (
     <div className="bg-white rounded-2xl border border-stone-200 shadow-xl p-5 w-72 fade-in">
       <div className="mb-4">
+        {category && (
+          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-500 mb-1">
+            {category.label}
+          </p>
+        )}
         <h3 className="font-serif text-lg text-stone-800">{config.label}</h3>
-        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-stone-400 mt-1">
-          Contextual Controls
+        <p className="text-[10px] text-stone-400 mt-1">
+          {config.description}
         </p>
       </div>
 

@@ -4,7 +4,7 @@ import { useEffect, useRef, useCallback } from "react";
 import { useSessionStore } from "@/lib/store/session";
 import { usePromptsStore } from "@/lib/store/prompts";
 import { buildInpaintPrompt, buildFullPrompt } from "@/lib/prompts";
-import { REGION_CONFIGS } from "@/components/controls/controlsConfig";
+import { getSubRegionConfig, getCategoryForSubRegion } from "@/components/controls/controlsConfig";
 import { detectFaceLandmarks } from "@/lib/mediapipe";
 import { generateRegionMask, generateRegionOverlay, maskToDataURL } from "@/lib/masks";
 import { generateEditedImage } from "@/lib/api/gemini";
@@ -16,7 +16,7 @@ import HistoryTray from "./HistoryTray";
 export default function SimulationWorkbench() {
   const {
     capturedImage,
-    selectedRegion,
+    selectedSubRegion,
     controlValues,
     notes,
     isProcessing,
@@ -68,9 +68,9 @@ export default function SimulationWorkbench() {
     runFaceDetection();
   }, [runFaceDetection]);
 
-  // Generate mask overlay when region is selected
+  // Generate mask overlay when sub-region is selected
   useEffect(() => {
-    if (!selectedRegion || !landmarks || !imageRef.current) {
+    if (!selectedSubRegion || !landmarks || !imageRef.current) {
       setMaskOverlay(null);
       return;
     }
@@ -78,22 +78,22 @@ export default function SimulationWorkbench() {
     const { naturalWidth, naturalHeight } = imageRef.current;
     const overlay = generateRegionOverlay(
       landmarks,
-      selectedRegion,
+      selectedSubRegion,
       naturalWidth,
       naturalHeight
     );
     setMaskOverlay(maskToDataURL(overlay));
-  }, [selectedRegion, landmarks, setMaskOverlay]);
+  }, [selectedSubRegion, landmarks, setMaskOverlay]);
 
   const hasValues =
-    selectedRegion &&
+    selectedSubRegion &&
     Object.values(controlValues).some((v) => v > 0);
 
   const handleApply = async () => {
-    if (!selectedRegion || !hasValues || !capturedImage) return;
+    if (!selectedSubRegion || !hasValues || !capturedImage) return;
 
     // Build the task prompt using configurable prompts from store
-    const taskPrompt = buildInpaintPrompt(selectedRegion, controlValues, prompts, notes);
+    const taskPrompt = buildInpaintPrompt(selectedSubRegion, controlValues, prompts, notes);
     if (!taskPrompt) return;
 
     // Build the full prompt with system wrapper
@@ -112,7 +112,7 @@ export default function SimulationWorkbench() {
         const { naturalWidth, naturalHeight } = imageRef.current;
         const mask = generateRegionMask(
           landmarks,
-          selectedRegion,
+          selectedSubRegion,
           naturalWidth,
           naturalHeight
         );
@@ -122,12 +122,18 @@ export default function SimulationWorkbench() {
       // Call Gemini API for image generation
       const outputImage = await generateEditedImage(sourceImage, fullPrompt);
 
-      const config = REGION_CONFIGS[selectedRegion];
+      const subRegionConfig = getSubRegionConfig(selectedSubRegion);
+      const categoryConfig = getCategoryForSubRegion(selectedSubRegion);
+
       addVersion({
         id: `v-${Date.now()}`,
         timestamp: Date.now(),
-        region: selectedRegion,
-        regionLabel: config.label,
+        category: categoryConfig?.id ?? "lips",
+        categoryLabel: categoryConfig?.label ?? "Unknown",
+        subRegion: selectedSubRegion,
+        subRegionLabel: subRegionConfig?.label ?? "Unknown",
+        region: selectedSubRegion,
+        regionLabel: subRegionConfig?.label ?? "Unknown",
         controlValues: { ...controlValues },
         notes,
         prompt: fullPrompt,
@@ -189,7 +195,7 @@ export default function SimulationWorkbench() {
       <div className="flex-1 flex overflow-hidden min-h-0">
         <ComparisonView />
 
-        {selectedRegion && (
+        {selectedSubRegion && (
           <div className="w-80 p-4 overflow-y-auto no-scrollbar shrink-0">
             <ContextualPanel />
           </div>

@@ -2,10 +2,11 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { SubRegion } from "@/types";
 
 export interface PromptConfig {
   systemPrompt: string;
-  regions: Record<string, RegionPromptConfig>;
+  regions: Record<SubRegion, RegionPromptConfig>;
 }
 
 export interface RegionPromptConfig {
@@ -33,181 +34,482 @@ RULES:
 - Return ONLY the edited photograph as an image.`,
 
   regions: {
-    lips: {
-      location: "the lips",
+    // ============================================================================
+    // LIPS (5 sub-regions)
+    // ============================================================================
+
+    lips_upperLip: {
+      location: "the upper lip",
       controls: {
         volume: {
-          slight: "Make the lips slightly fuller, as if a small amount of lip filler was injected.",
-          noticeable: "Make the lips noticeably fuller and plumper, with visibly more volume in both upper and lower lips.",
-          significant: "Make the lips significantly fuller with prominent volume increase. The lips should look like they received a substantial dermal filler treatment.",
-          dramatic: "Make the lips dramatically fuller and very plump. Both lips should be visibly large and voluminous, like a heavy lip filler result.",
+          slight: "Add a subtle amount of volume to the upper lip.",
+          noticeable: "Noticeably increase upper lip fullness and plumpness.",
+          significant: "Significantly enhance upper lip volume for prominent fullness.",
+          dramatic: "Dramatically augment the upper lip for very full, pouty appearance.",
         },
         projection: {
-          slight: "Slightly increase the forward projection of the lips.",
-          noticeable: "Make the lips project forward more noticeably from the face.",
-          significant: "Significantly increase lip projection so they protrude forward prominently.",
-          dramatic: "Dramatically increase lip projection for a very pronounced, pouty appearance.",
+          slight: "Slightly increase upper lip forward projection.",
+          noticeable: "Noticeably project the upper lip forward.",
+          significant: "Significantly increase upper lip projection.",
+          dramatic: "Dramatically project the upper lip for maximum pout.",
         },
-        definition: {
-          slight: "Slightly sharpen the lip border (vermillion border) for better definition.",
-          noticeable: "Make the lip border clearly more defined and sharp, with a distinct cupid's bow.",
-          significant: "Significantly enhance lip border definition with a very crisp, well-defined vermillion border.",
-          dramatic: "Create dramatically sharp and perfectly defined lip borders with an exaggerated cupid's bow.",
-        },
-        width: {
-          slight: "Slightly widen the lips horizontally.",
-          noticeable: "Noticeably widen the lips for a broader smile shape.",
-          significant: "Significantly widen the lips horizontally.",
-          dramatic: "Dramatically widen the lips for a much broader mouth appearance.",
+        eversion: {
+          slight: "Slightly evert the upper lip (increase lip flip).",
+          noticeable: "Noticeably increase upper lip eversion for more visible vermilion.",
+          significant: "Significantly flip the upper lip outward.",
+          dramatic: "Dramatically evert the upper lip for maximum visible red lip.",
         },
       },
     },
-    jawline: {
-      location: "the jawline",
-      controls: {
-        definition: {
-          slight: "Slightly sharpen the jawline for a more defined mandibular border.",
-          noticeable: "Make the jawline noticeably sharper and more chiseled.",
-          significant: "Create a significantly more defined, angular jawline with clear bone structure visible.",
-          dramatic: "Dramatically sculpt the jawline to be extremely sharp and angular, like a model's jawline.",
-        },
-        contour: {
-          slight: "Slightly refine the overall jawline contour for a cleaner shape.",
-          noticeable: "Noticeably improve jawline contour with a smoother, more refined shape.",
-          significant: "Significantly reshape the jawline contour for a sculpted, V-shaped lower face.",
-          dramatic: "Dramatically reshape the jawline into a perfectly contoured, sculpted V-shape.",
-        },
-        angle: {
-          slight: "Slightly increase the angular appearance of the jaw angle.",
-          noticeable: "Make the jaw angle noticeably more angular and defined.",
-          significant: "Create a significantly more angular jaw with sharp mandibular angles.",
-          dramatic: "Dramatically enhance the jaw angles for an extremely angular, square-jawed appearance.",
-        },
-      },
-    },
-    chin: {
-      location: "the chin",
-      controls: {
-        projection: {
-          slight: "Slightly increase chin projection, moving it slightly forward.",
-          noticeable: "Noticeably increase chin projection for better facial balance.",
-          significant: "Significantly project the chin forward, like a chin implant or substantial filler.",
-          dramatic: "Dramatically increase chin projection for a very prominent, strong chin.",
-        },
-        length: {
-          slight: "Slightly elongate the chin vertically.",
-          noticeable: "Noticeably lengthen the chin for a more elongated lower face.",
-          significant: "Significantly lengthen the chin vertically.",
-          dramatic: "Dramatically elongate the chin for a much longer lower face proportion.",
-        },
-        width: {
-          slight: "Slightly widen the chin.",
-          noticeable: "Noticeably widen the chin for a broader lower face.",
-          significant: "Significantly widen the chin.",
-          dramatic: "Dramatically widen the chin for a much broader appearance.",
-        },
-      },
-    },
-    cheeks: {
-      location: "the cheeks",
+
+    lips_lowerLip: {
+      location: "the lower lip",
       controls: {
         volume: {
-          slight: "Add a subtle amount of volume to the cheeks, like a light cheek filler.",
-          noticeable: "Add noticeable volume to the cheeks, making them fuller and rounder, like mid-face filler.",
-          significant: "Add significant volume to the cheeks for prominently full, round cheekbones.",
-          dramatic: "Add dramatic volume to the cheeks for very full, prominent, apple-shaped cheeks.",
+          slight: "Add subtle volume to the lower lip.",
+          noticeable: "Noticeably increase lower lip fullness.",
+          significant: "Significantly augment lower lip volume.",
+          dramatic: "Dramatically enhance lower lip for very full appearance.",
+        },
+        projection: {
+          slight: "Slightly project the lower lip forward.",
+          noticeable: "Noticeably increase lower lip projection.",
+          significant: "Significantly project the lower lip.",
+          dramatic: "Dramatically project the lower lip for maximum pout.",
+        },
+        definition: {
+          slight: "Slightly enhance lower lip border definition.",
+          noticeable: "Noticeably sharpen the lower lip border.",
+          significant: "Significantly define the lower lip vermilion border.",
+          dramatic: "Create dramatically sharp lower lip definition.",
+        },
+      },
+    },
+
+    lips_vermilionBorder: {
+      location: "the lip border (vermilion border)",
+      controls: {
+        definition: {
+          slight: "Slightly enhance the vermilion border definition.",
+          noticeable: "Noticeably sharpen and define the lip border.",
+          significant: "Significantly crisp up the vermilion border all around.",
+          dramatic: "Create dramatically sharp, perfectly defined lip borders.",
+        },
+        enhancement: {
+          slight: "Slightly enhance the white roll visibility.",
+          noticeable: "Noticeably increase white roll prominence.",
+          significant: "Significantly enhance the white roll for defined borders.",
+          dramatic: "Dramatically enhance white roll for maximum border visibility.",
+        },
+      },
+    },
+
+    lips_cupidsBow: {
+      location: "the cupid's bow (upper lip peaks)",
+      controls: {
+        definition: {
+          slight: "Slightly sharpen the cupid's bow peaks.",
+          noticeable: "Noticeably define the cupid's bow shape.",
+          significant: "Significantly enhance cupid's bow definition.",
+          dramatic: "Create a dramatically sharp, pronounced cupid's bow.",
+        },
+        height: {
+          slight: "Slightly increase cupid's bow peak height.",
+          noticeable: "Noticeably raise the cupid's bow peaks.",
+          significant: "Significantly elevate the cupid's bow peaks.",
+          dramatic: "Dramatically raise cupid's bow for exaggerated peaks.",
+        },
+      },
+    },
+
+    lips_mouthCorners: {
+      location: "the mouth corners (oral commissures)",
+      controls: {
+        lift: {
+          slight: "Slightly lift the mouth corners upward.",
+          noticeable: "Noticeably elevate the oral commissures for a happier look.",
+          significant: "Significantly lift mouth corners to reduce downturn.",
+          dramatic: "Dramatically lift mouth corners for an upturned smile.",
+        },
+        volumization: {
+          slight: "Add subtle volume to the mouth corners.",
+          noticeable: "Noticeably fill the mouth corners for smoother transition.",
+          significant: "Significantly volumize the oral commissures.",
+          dramatic: "Dramatically augment mouth corners for full support.",
+        },
+      },
+    },
+
+    // ============================================================================
+    // NOSE (3 sub-regions) - GATED
+    // ============================================================================
+
+    nose_bridge: {
+      location: "the nasal bridge (dorsum)",
+      controls: {
+        height: {
+          slight: "Slightly raise the nasal bridge height.",
+          noticeable: "Noticeably increase dorsal height for a more prominent bridge.",
+          significant: "Significantly elevate the nasal bridge.",
+          dramatic: "Dramatically raise the nasal bridge for a very high profile.",
+        },
+        smoothing: {
+          slight: "Slightly smooth the nasal bridge to reduce any bump.",
+          noticeable: "Noticeably smooth the dorsum for a straighter profile.",
+          significant: "Significantly smooth the bridge, removing visible humps.",
+          dramatic: "Create a perfectly straight, smooth nasal bridge.",
+        },
+        width: {
+          slight: "Slightly narrow the nasal bridge width.",
+          noticeable: "Noticeably reduce bridge width for a slimmer profile.",
+          significant: "Significantly narrow the nasal bridge.",
+          dramatic: "Dramatically slim the bridge for a very narrow appearance.",
+        },
+      },
+    },
+
+    nose_tip: {
+      location: "the nose tip",
+      controls: {
+        projection: {
+          slight: "Slightly increase nose tip projection.",
+          noticeable: "Noticeably project the nasal tip forward.",
+          significant: "Significantly enhance tip projection.",
+          dramatic: "Dramatically project the tip for maximum definition.",
+        },
+        rotation: {
+          slight: "Slightly rotate the nose tip upward.",
+          noticeable: "Noticeably upturn the nasal tip.",
+          significant: "Significantly rotate the tip upward for a lifted appearance.",
+          dramatic: "Dramatically upturn the nose tip for maximum rotation.",
+        },
+        definition: {
+          slight: "Slightly refine and sharpen the nose tip.",
+          noticeable: "Noticeably define the tip for better shape.",
+          significant: "Significantly refine the tip for a sculpted appearance.",
+          dramatic: "Create a dramatically refined, perfectly defined nose tip.",
+        },
+      },
+    },
+
+    nose_base: {
+      location: "the nose base and nostrils (alar base)",
+      controls: {
+        width: {
+          slight: "Slightly narrow the alar base width.",
+          noticeable: "Noticeably reduce nostril width.",
+          significant: "Significantly narrow the alar base.",
+          dramatic: "Dramatically narrow the nostril width for slim nostrils.",
+        },
+        flare: {
+          slight: "Slightly reduce nostril flare.",
+          noticeable: "Noticeably decrease alar flare for a refined base.",
+          significant: "Significantly reduce nostril flaring.",
+          dramatic: "Dramatically minimize nostril flare for a compact base.",
+        },
+      },
+    },
+
+    // ============================================================================
+    // UPPER FACE (5 sub-regions)
+    // ============================================================================
+
+    upperFace_forehead: {
+      location: "the forehead",
+      controls: {
+        smoothing: {
+          slight: "Slightly smooth forehead lines and wrinkles.",
+          noticeable: "Noticeably reduce forehead wrinkles for smoother skin.",
+          significant: "Significantly smooth the forehead, reducing most lines.",
+          dramatic: "Create a perfectly smooth, wrinkle-free forehead.",
+        },
+        relaxation: {
+          slight: "Slightly relax the forehead muscles, like mild Botox.",
+          noticeable: "Noticeably relax forehead for a fresher appearance.",
+          significant: "Significantly relax the forehead muscles.",
+          dramatic: "Completely relax forehead muscles for maximum smoothing.",
+        },
+        contouring: {
+          slight: "Slightly refine forehead contour and shape.",
+          noticeable: "Noticeably improve forehead proportions.",
+          significant: "Significantly contour the forehead shape.",
+          dramatic: "Dramatically reshape forehead for ideal proportions.",
+        },
+      },
+    },
+
+    upperFace_glabella: {
+      location: "the glabella (frown lines between eyebrows)",
+      controls: {
+        relaxation: {
+          slight: "Slightly relax the glabellar lines (11s).",
+          noticeable: "Noticeably soften frown lines between brows.",
+          significant: "Significantly relax glabellar muscles, reducing 11 lines.",
+          dramatic: "Completely smooth the glabella, eliminating frown lines.",
+        },
+        smoothing: {
+          slight: "Slightly smooth the glabellar crease.",
+          noticeable: "Noticeably reduce the vertical frown crease.",
+          significant: "Significantly smooth the glabellar area.",
+          dramatic: "Create a perfectly smooth glabella with no creases.",
+        },
+      },
+    },
+
+    upperFace_brow: {
+      location: "the eyebrows",
+      controls: {
+        lift: {
+          slight: "Slightly lift the eyebrow position.",
+          noticeable: "Noticeably elevate the brows for a refreshed look.",
+          significant: "Significantly lift the eyebrows for an open-eye effect.",
+          dramatic: "Dramatically lift brows for maximum elevation.",
+        },
+        arch: {
+          slight: "Slightly enhance the brow arch.",
+          noticeable: "Noticeably increase brow arch height.",
+          significant: "Significantly arch the eyebrows for a sculpted look.",
+          dramatic: "Create dramatically arched brows for maximum definition.",
+        },
+        tail: {
+          slight: "Slightly lift the lateral brow tail.",
+          noticeable: "Noticeably elevate the outer brow for a cat-eye effect.",
+          significant: "Significantly lift the brow tail upward.",
+          dramatic: "Dramatically lift the lateral brow for maximum lift.",
+        },
+      },
+    },
+
+    upperFace_crowsFeet: {
+      location: "the crow's feet (lateral orbital lines)",
+      controls: {
+        smoothing: {
+          slight: "Slightly smooth the crow's feet wrinkles.",
+          noticeable: "Noticeably reduce lateral eye wrinkles.",
+          significant: "Significantly smooth crow's feet for a youthful look.",
+          dramatic: "Eliminate crow's feet for perfectly smooth eye corners.",
+        },
+        relaxation: {
+          slight: "Slightly relax the orbicularis oculi muscle.",
+          noticeable: "Noticeably relax the eye area muscles.",
+          significant: "Significantly relax muscles around the eyes.",
+          dramatic: "Completely relax eye corner muscles for maximum smoothing.",
+        },
+      },
+    },
+
+    upperFace_temples: {
+      location: "the temples",
+      controls: {
+        volume: {
+          slight: "Slightly fill the temple hollows.",
+          noticeable: "Noticeably restore temple volume.",
+          significant: "Significantly fill temples for a youthful convexity.",
+          dramatic: "Dramatically augment temples for maximum fullness.",
+        },
+        contouring: {
+          slight: "Slightly improve temple contour.",
+          noticeable: "Noticeably reshape temple area for better proportions.",
+          significant: "Significantly contour temples for ideal shape.",
+          dramatic: "Dramatically sculpt temples for perfect facial balance.",
+        },
+      },
+    },
+
+    // ============================================================================
+    // UNDER-EYE (2 sub-regions)
+    // ============================================================================
+
+    underEye_tearTrough: {
+      location: "the tear trough (under-eye hollow)",
+      controls: {
+        fill: {
+          slight: "Slightly fill the tear trough hollow.",
+          noticeable: "Noticeably reduce under-eye hollowing.",
+          significant: "Significantly fill tear troughs for a rested look.",
+          dramatic: "Completely fill tear troughs for maximum rejuvenation.",
+        },
+        smoothing: {
+          slight: "Slightly smooth the tear trough transition.",
+          noticeable: "Noticeably blend the under-eye to cheek transition.",
+          significant: "Significantly smooth the tear trough area.",
+          dramatic: "Create a perfectly smooth under-eye to cheek transition.",
+        },
+        darkness: {
+          slight: "Slightly reduce dark circle appearance.",
+          noticeable: "Noticeably brighten under-eye darkness.",
+          significant: "Significantly reduce dark circles.",
+          dramatic: "Eliminate dark circles for bright under-eyes.",
+        },
+      },
+    },
+
+    underEye_lowerEyelid: {
+      location: "the lower eyelid",
+      controls: {
+        tightening: {
+          slight: "Slightly tighten lower eyelid skin.",
+          noticeable: "Noticeably firm the lower eyelid.",
+          significant: "Significantly tighten lower lid skin.",
+          dramatic: "Dramatically firm lower eyelids for maximum tightening.",
+        },
+        smoothing: {
+          slight: "Slightly smooth fine lines on lower lids.",
+          noticeable: "Noticeably reduce lower eyelid wrinkles.",
+          significant: "Significantly smooth lower lid texture.",
+          dramatic: "Create perfectly smooth lower eyelids.",
+        },
+      },
+    },
+
+    // ============================================================================
+    // CHEEKS & MIDFACE (3 sub-regions)
+    // ============================================================================
+
+    cheeksMidface_cheek: {
+      location: "the cheeks (malar region)",
+      controls: {
+        volume: {
+          slight: "Add subtle volume to the cheekbones.",
+          noticeable: "Noticeably increase malar fullness.",
+          significant: "Significantly augment cheek volume.",
+          dramatic: "Dramatically enhance cheeks for prominent cheekbones.",
         },
         lift: {
-          slight: "Slightly lift the cheekbones upward for a subtle lifted appearance.",
-          noticeable: "Noticeably lift the cheekbones higher on the face.",
-          significant: "Significantly lift and elevate the cheekbones for a high-cheekbone look.",
-          dramatic: "Dramatically lift the cheekbones to their highest position for a supermodel cheekbone effect.",
+          slight: "Slightly lift the cheekbone position.",
+          noticeable: "Noticeably elevate the malar area.",
+          significant: "Significantly lift cheeks for a youthful position.",
+          dramatic: "Dramatically lift cheekbones for maximum elevation.",
         },
         projection: {
-          slight: "Slightly increase the forward projection of the cheekbones.",
-          noticeable: "Noticeably increase cheekbone projection for more prominent cheeks.",
-          significant: "Significantly project the cheekbones forward for very prominent mid-face structure.",
-          dramatic: "Dramatically increase cheekbone projection for extremely prominent, sculpted cheekbones.",
+          slight: "Slightly increase cheekbone projection.",
+          noticeable: "Noticeably project cheekbones forward.",
+          significant: "Significantly enhance malar projection.",
+          dramatic: "Dramatically project cheekbones for sculpted look.",
         },
       },
     },
-    nasolabial: {
+
+    cheeksMidface_midfaceVolume: {
+      location: "the midface (central cheek area)",
+      controls: {
+        volume: {
+          slight: "Add subtle midface volume.",
+          noticeable: "Noticeably restore central face fullness.",
+          significant: "Significantly augment midface volume.",
+          dramatic: "Dramatically fill the midface for youthful fullness.",
+        },
+        lift: {
+          slight: "Slightly lift the midface tissues.",
+          noticeable: "Noticeably elevate the central face.",
+          significant: "Significantly lift midface for anti-aging effect.",
+          dramatic: "Dramatically lift midface for maximum rejuvenation.",
+        },
+      },
+    },
+
+    cheeksMidface_nasolabialFold: {
       location: "the nasolabial folds (smile lines)",
       controls: {
         depthReduction: {
-          slight: "Slightly reduce the depth of the nasolabial folds (smile lines from nose to mouth).",
-          noticeable: "Noticeably reduce the nasolabial folds, making the smile lines visibly shallower.",
-          significant: "Significantly reduce the nasolabial folds, making them much less visible.",
-          dramatic: "Almost completely eliminate the nasolabial folds for a smooth transition from nose to mouth.",
+          slight: "Slightly reduce nasolabial fold depth.",
+          noticeable: "Noticeably soften smile lines.",
+          significant: "Significantly reduce nasolabial fold visibility.",
+          dramatic: "Nearly eliminate nasolabial folds.",
         },
         smoothing: {
-          slight: "Slightly smooth the skin around the nasolabial area.",
-          noticeable: "Noticeably smooth and soften the nasolabial fold area.",
-          significant: "Significantly smooth the entire nasolabial area for a much younger appearance.",
-          dramatic: "Dramatically smooth the nasolabial area, removing nearly all creases and folds.",
+          slight: "Slightly smooth the nasolabial area.",
+          noticeable: "Noticeably blend the nasolabial transition.",
+          significant: "Significantly smooth smile line area.",
+          dramatic: "Create a perfectly smooth nose-to-mouth transition.",
         },
       },
     },
-    upperFace: {
-      location: "the forehead and brow area",
+
+    // ============================================================================
+    // LOWER FACE (4 sub-regions)
+    // ============================================================================
+
+    lowerFace_chin: {
+      location: "the chin",
       controls: {
-        relaxation: {
-          slight: "Slightly relax the forehead lines, like a mild Botox effect.",
-          noticeable: "Noticeably smooth forehead wrinkles and frown lines, like a Botox treatment.",
-          significant: "Significantly relax all forehead muscles, removing most wrinkles and furrows.",
-          dramatic: "Completely smooth the forehead, removing all wrinkles, lines, and furrows for a perfectly smooth forehead.",
+        projection: {
+          slight: "Slightly increase chin projection.",
+          noticeable: "Noticeably project the chin forward.",
+          significant: "Significantly enhance chin projection.",
+          dramatic: "Dramatically project chin for a strong profile.",
         },
-        lift: {
-          slight: "Slightly lift the eyebrows upward.",
-          noticeable: "Noticeably lift the brow position for a more open, refreshed eye area.",
-          significant: "Significantly lift the eyebrows for a prominent brow lift effect.",
-          dramatic: "Dramatically lift the eyebrows to their highest natural position, creating a very open, arched look.",
-        },
-        smoothing: {
-          slight: "Slightly smooth the forehead skin texture.",
-          noticeable: "Noticeably improve forehead skin smoothness and texture.",
-          significant: "Significantly smooth the entire forehead for a refined, youthful texture.",
-          dramatic: "Create a perfectly smooth, poreless forehead with flawless skin texture.",
-        },
-      },
-    },
-    tearTroughs: {
-      location: "the under-eye area (tear troughs)",
-      controls: {
-        fill: {
-          slight: "Slightly fill the under-eye hollows to reduce the tired, sunken appearance.",
-          noticeable: "Noticeably fill the tear troughs, reducing dark circles and hollow appearance under the eyes.",
-          significant: "Significantly fill the tear troughs for a well-rested, refreshed under-eye area with minimal hollowing.",
-          dramatic: "Completely fill the tear troughs, eliminating all hollowing and dark circles under the eyes.",
-        },
-        smoothing: {
-          slight: "Slightly smooth the under-eye skin.",
-          noticeable: "Noticeably smooth the transition between lower eyelid and cheek.",
-          significant: "Significantly smooth the entire under-eye area for a rejuvenated look.",
-          dramatic: "Perfectly smooth the under-eye area, creating a seamless transition from eye to cheek.",
-        },
-      },
-    },
-    nose: {
-      location: "the nose",
-      controls: {
-        bridgeHeight: {
-          slight: "Slightly raise the nasal bridge height.",
-          noticeable: "Noticeably increase the nasal bridge height for a more prominent nose bridge.",
-          significant: "Significantly raise the nasal bridge for a higher, more defined nose profile.",
-          dramatic: "Dramatically increase nasal bridge height for a very prominent, high nose bridge.",
-        },
-        tipProjection: {
-          slight: "Slightly refine and project the nose tip forward.",
-          noticeable: "Noticeably project the nasal tip forward for better tip definition.",
-          significant: "Significantly increase nose tip projection for a more prominent, defined tip.",
-          dramatic: "Dramatically project the nose tip forward with maximum tip refinement.",
+        length: {
+          slight: "Slightly elongate the chin vertically.",
+          noticeable: "Noticeably lengthen the chin.",
+          significant: "Significantly increase chin length.",
+          dramatic: "Dramatically elongate chin for longer lower face.",
         },
         width: {
-          slight: "Slightly narrow the nostrils and overall nose width.",
-          noticeable: "Noticeably narrow the nose, reducing nostril width for a slimmer nose.",
-          significant: "Significantly narrow the nose for a much slimmer nasal appearance.",
-          dramatic: "Dramatically narrow the nose for the slimmest possible natural appearance.",
+          slight: "Slightly widen the chin.",
+          noticeable: "Noticeably increase chin width.",
+          significant: "Significantly broaden the chin.",
+          dramatic: "Dramatically widen chin for a square jaw effect.",
+        },
+      },
+    },
+
+    lowerFace_jawline: {
+      location: "the jawline",
+      controls: {
+        definition: {
+          slight: "Slightly sharpen jawline definition.",
+          noticeable: "Noticeably enhance mandibular border.",
+          significant: "Significantly define the jawline.",
+          dramatic: "Create a dramatically sharp, chiseled jawline.",
+        },
+        contour: {
+          slight: "Slightly refine jawline contour.",
+          noticeable: "Noticeably improve jaw shape.",
+          significant: "Significantly sculpt the jawline contour.",
+          dramatic: "Dramatically reshape jaw for ideal contour.",
+        },
+        angle: {
+          slight: "Slightly enhance the jaw angle.",
+          noticeable: "Noticeably increase jaw angle definition.",
+          significant: "Significantly sharpen the mandibular angle.",
+          dramatic: "Create dramatically angular jaw angles.",
+        },
+      },
+    },
+
+    lowerFace_marionetteLines: {
+      location: "the marionette lines (mouth-to-chin lines)",
+      controls: {
+        depthReduction: {
+          slight: "Slightly reduce marionette line depth.",
+          noticeable: "Noticeably soften corner-to-chin lines.",
+          significant: "Significantly reduce marionette line visibility.",
+          dramatic: "Nearly eliminate marionette lines.",
+        },
+        smoothing: {
+          slight: "Slightly smooth the marionette area.",
+          noticeable: "Noticeably blend the mouth corner to chin.",
+          significant: "Significantly smooth marionette region.",
+          dramatic: "Create perfectly smooth mouth-to-chin transition.",
+        },
+      },
+    },
+
+    lowerFace_preJowl: {
+      location: "the pre-jowl area (lateral chin)",
+      controls: {
+        volume: {
+          slight: "Slightly fill the pre-jowl sulcus.",
+          noticeable: "Noticeably restore pre-jowl volume.",
+          significant: "Significantly fill the pre-jowl area.",
+          dramatic: "Dramatically augment pre-jowl for smooth jawline.",
+        },
+        contouring: {
+          slight: "Slightly improve jawline continuity.",
+          noticeable: "Noticeably smooth the pre-jowl contour.",
+          significant: "Significantly contour the pre-jowl area.",
+          dramatic: "Create perfect jawline continuity with no sulcus.",
         },
       },
     },
@@ -217,9 +519,9 @@ RULES:
 interface PromptsStore {
   prompts: PromptConfig;
   setSystemPrompt: (prompt: string) => void;
-  setRegionLocation: (region: string, location: string) => void;
+  setRegionLocation: (region: SubRegion, location: string) => void;
   setControlPrompt: (
-    region: string,
+    region: SubRegion,
     control: string,
     intensity: "slight" | "noticeable" | "significant" | "dramatic",
     prompt: string
@@ -260,9 +562,9 @@ export const usePromptsStore = create<PromptsStore>()(
               [region]: {
                 ...state.prompts.regions[region],
                 controls: {
-                  ...state.prompts.regions[region].controls,
+                  ...state.prompts.regions[region]?.controls,
                   [control]: {
-                    ...state.prompts.regions[region].controls[control],
+                    ...state.prompts.regions[region]?.controls?.[control],
                     [intensity]: prompt,
                   },
                 },
@@ -274,7 +576,7 @@ export const usePromptsStore = create<PromptsStore>()(
       resetToDefaults: () => set({ prompts: DEFAULT_PROMPTS }),
     }),
     {
-      name: "aesthetic-prompts",
+      name: "aesthetic-prompts-v2", // New key to avoid conflicts with old data
     }
   )
 );

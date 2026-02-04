@@ -1,4 +1,4 @@
-import type { FacialRegion, RegionControlValues } from "@/types";
+import type { SubRegion, RegionControlValues } from "@/types";
 import type { PromptConfig } from "@/lib/store/prompts";
 
 function getIntensityKey(value: number): "slight" | "noticeable" | "significant" | "dramatic" {
@@ -9,12 +9,12 @@ function getIntensityKey(value: number): "slight" | "noticeable" | "significant"
 }
 
 export function buildInpaintPrompt(
-  region: FacialRegion,
+  subRegion: SubRegion,
   controlValues: RegionControlValues,
   promptsConfig: PromptConfig,
   notes?: string
 ): string {
-  const regionConfig = promptsConfig.regions[region];
+  const regionConfig = promptsConfig.regions[subRegion];
   if (!regionConfig) return "";
 
   const descriptions: string[] = [];
