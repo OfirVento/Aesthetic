@@ -22,15 +22,19 @@ export interface ControlPromptConfig {
 }
 
 const DEFAULT_PROMPTS: PromptConfig = {
-  systemPrompt: `Edit this face photograph. You MUST modify the image and return a new version with the changes applied. Do NOT return the original image unchanged.
+  systemPrompt: `You are simulating INJECTABLE COSMETIC PROCEDURES (dermal fillers, Botox) on this face photograph. Edit the image to show the realistic result of the procedure described below.
 
 {TASK_PROMPT}
 
-RULES:
-- You MUST apply the changes described above. The output MUST look visibly different from the input.
-- Keep the person's identity recognizable — same person, same background, same hair, same clothing.
-- Only modify the specific facial area mentioned above.
-- The result must be photorealistic, as if the person actually had this cosmetic procedure.
+CRITICAL RULES:
+- This is a MEDICAL SIMULATION of injectable treatments, NOT makeup or photo filters.
+- NEVER add lipstick, lip color, makeup, or any color changes to lips or skin.
+- NEVER add white highlights, shine, or glossy effects.
+- Keep the EXACT SAME natural skin tone and lip color as the original photo.
+- Only change the SHAPE, VOLUME, or STRUCTURE of the targeted area.
+- The result must look like the person's NATURAL face, just with subtle structural enhancement.
+- Changes should be subtle and realistic, as actual injectable results would appear.
+- Keep the person's identity, background, hair, clothing, and skin texture exactly the same.
 - Return ONLY the edited photograph as an image.`,
 
   regions: {
@@ -42,22 +46,22 @@ RULES:
       location: "the upper lip",
       controls: {
         volume: {
-          slight: "Add a subtle amount of volume to the upper lip.",
-          noticeable: "Noticeably increase upper lip fullness and plumpness.",
-          significant: "Significantly enhance upper lip volume for prominent fullness.",
-          dramatic: "Dramatically augment the upper lip for very full, pouty appearance.",
+          slight: "Simulate subtle lip filler: slightly increase upper lip thickness and fullness while keeping the exact same natural lip color.",
+          noticeable: "Simulate moderate lip filler: noticeably increase upper lip fullness while preserving natural lip color and texture.",
+          significant: "Simulate significant lip filler: enhance upper lip volume substantially while maintaining natural lip color.",
+          dramatic: "Simulate maximum lip filler: dramatically augment upper lip fullness while keeping the same natural lip color.",
         },
         projection: {
-          slight: "Slightly increase upper lip forward projection.",
-          noticeable: "Noticeably project the upper lip forward.",
-          significant: "Significantly increase upper lip projection.",
-          dramatic: "Dramatically project the upper lip for maximum pout.",
+          slight: "Slightly increase upper lip forward projection through simulated filler, keeping natural color.",
+          noticeable: "Noticeably project the upper lip forward as with filler injection, no color change.",
+          significant: "Significantly increase upper lip projection, natural color preserved.",
+          dramatic: "Dramatically project the upper lip for maximum pout, same natural lip color.",
         },
         eversion: {
-          slight: "Slightly evert the upper lip (increase lip flip).",
-          noticeable: "Noticeably increase upper lip eversion for more visible vermilion.",
-          significant: "Significantly flip the upper lip outward.",
-          dramatic: "Dramatically evert the upper lip for maximum visible red lip.",
+          slight: "Slightly evert the upper lip outward (lip flip effect) keeping natural color.",
+          noticeable: "Noticeably increase upper lip eversion for more visible lip surface, same color.",
+          significant: "Significantly flip the upper lip outward, natural color unchanged.",
+          dramatic: "Dramatically evert the upper lip for maximum visible surface, preserve natural color.",
         },
       },
     },
@@ -66,22 +70,22 @@ RULES:
       location: "the lower lip",
       controls: {
         volume: {
-          slight: "Add subtle volume to the lower lip.",
-          noticeable: "Noticeably increase lower lip fullness.",
-          significant: "Significantly augment lower lip volume.",
-          dramatic: "Dramatically enhance lower lip for very full appearance.",
+          slight: "Simulate subtle lip filler: slightly increase lower lip thickness while keeping exact same natural lip color.",
+          noticeable: "Simulate moderate lip filler: noticeably increase lower lip fullness, preserve natural color.",
+          significant: "Simulate significant lip filler: substantially augment lower lip volume, same natural color.",
+          dramatic: "Simulate maximum lip filler: dramatically enhance lower lip fullness, keep natural lip color.",
         },
         projection: {
-          slight: "Slightly project the lower lip forward.",
-          noticeable: "Noticeably increase lower lip projection.",
-          significant: "Significantly project the lower lip.",
-          dramatic: "Dramatically project the lower lip for maximum pout.",
+          slight: "Slightly project the lower lip forward via simulated filler, natural color unchanged.",
+          noticeable: "Noticeably increase lower lip projection, preserve natural color.",
+          significant: "Significantly project the lower lip forward, same natural color.",
+          dramatic: "Dramatically project the lower lip for maximum pout, natural color preserved.",
         },
         definition: {
-          slight: "Slightly enhance lower lip border definition.",
-          noticeable: "Noticeably sharpen the lower lip border.",
-          significant: "Significantly define the lower lip vermilion border.",
-          dramatic: "Create dramatically sharp lower lip definition.",
+          slight: "Slightly enhance lower lip border definition through subtle filler, no color change.",
+          noticeable: "Noticeably sharpen the lower lip border structure, same natural color.",
+          significant: "Significantly define the lower lip vermilion border, preserve natural color.",
+          dramatic: "Create dramatically sharp lower lip definition, keep natural lip color.",
         },
       },
     },
@@ -90,16 +94,16 @@ RULES:
       location: "the lip border (vermilion border)",
       controls: {
         definition: {
-          slight: "Slightly enhance the vermilion border definition.",
-          noticeable: "Noticeably sharpen and define the lip border.",
-          significant: "Significantly crisp up the vermilion border all around.",
-          dramatic: "Create dramatically sharp, perfectly defined lip borders.",
+          slight: "Slightly enhance the lip border definition through subtle filler, no color change.",
+          noticeable: "Noticeably sharpen and define the lip border structure, preserve natural color.",
+          significant: "Significantly crisp up the vermilion border all around, same natural lip color.",
+          dramatic: "Create dramatically sharp, defined lip borders through filler, natural color preserved.",
         },
         enhancement: {
-          slight: "Slightly enhance the white roll visibility.",
-          noticeable: "Noticeably increase white roll prominence.",
-          significant: "Significantly enhance the white roll for defined borders.",
-          dramatic: "Dramatically enhance white roll for maximum border visibility.",
+          slight: "Slightly enhance the lip border ridge visibility via filler, no color change.",
+          noticeable: "Noticeably increase lip border prominence, same natural color.",
+          significant: "Significantly enhance the lip border for defined edges, preserve natural color.",
+          dramatic: "Dramatically enhance lip border definition, keep exact same natural lip color.",
         },
       },
     },
@@ -108,16 +112,16 @@ RULES:
       location: "the cupid's bow (upper lip peaks)",
       controls: {
         definition: {
-          slight: "Slightly sharpen the cupid's bow peaks.",
-          noticeable: "Noticeably define the cupid's bow shape.",
-          significant: "Significantly enhance cupid's bow definition.",
-          dramatic: "Create a dramatically sharp, pronounced cupid's bow.",
+          slight: "Slightly sharpen the cupid's bow peaks through subtle filler, natural color unchanged.",
+          noticeable: "Noticeably define the cupid's bow shape, preserve natural lip color.",
+          significant: "Significantly enhance cupid's bow definition, same natural color.",
+          dramatic: "Create a dramatically sharp, pronounced cupid's bow, keep natural lip color.",
         },
         height: {
-          slight: "Slightly increase cupid's bow peak height.",
-          noticeable: "Noticeably raise the cupid's bow peaks.",
-          significant: "Significantly elevate the cupid's bow peaks.",
-          dramatic: "Dramatically raise cupid's bow for exaggerated peaks.",
+          slight: "Slightly increase cupid's bow peak height via filler, no color change.",
+          noticeable: "Noticeably raise the cupid's bow peaks, natural color preserved.",
+          significant: "Significantly elevate the cupid's bow peaks, same natural color.",
+          dramatic: "Dramatically raise cupid's bow for defined peaks, keep natural lip color.",
         },
       },
     },
@@ -126,16 +130,16 @@ RULES:
       location: "the mouth corners (oral commissures)",
       controls: {
         lift: {
-          slight: "Slightly lift the mouth corners upward.",
-          noticeable: "Noticeably elevate the oral commissures for a happier look.",
-          significant: "Significantly lift mouth corners to reduce downturn.",
-          dramatic: "Dramatically lift mouth corners for an upturned smile.",
+          slight: "Slightly lift the mouth corners upward via filler, natural skin color unchanged.",
+          noticeable: "Noticeably elevate the oral commissures for a happier look, no color change.",
+          significant: "Significantly lift mouth corners to reduce downturn, preserve natural color.",
+          dramatic: "Dramatically lift mouth corners for an upturned smile, same natural color.",
         },
         volumization: {
-          slight: "Add subtle volume to the mouth corners.",
-          noticeable: "Noticeably fill the mouth corners for smoother transition.",
-          significant: "Significantly volumize the oral commissures.",
-          dramatic: "Dramatically augment mouth corners for full support.",
+          slight: "Add subtle volume to the mouth corners via filler, natural color unchanged.",
+          noticeable: "Noticeably fill the mouth corners for smoother transition, no color change.",
+          significant: "Significantly volumize the oral commissures, preserve natural skin color.",
+          dramatic: "Dramatically augment mouth corners for full support, same natural color.",
         },
       },
     },
