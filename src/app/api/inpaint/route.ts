@@ -2,6 +2,12 @@ import { GoogleGenAI } from "@google/genai";
 import { NextRequest, NextResponse } from "next/server";
 
 const API_KEY = process.env.GEMINI_API_KEY;
+const MAX_RETRIES = 3;
+const INITIAL_DELAY_MS = 2000;
+
+async function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 export async function POST(req: NextRequest) {
   if (!API_KEY) {
@@ -41,18 +47,54 @@ export async function POST(req: NextRequest) {
     const mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
 
     // Send the prompt directly - client has already built the full prompt
-    const response = await ai.models.generateContent({
-      model: "gemini-3-pro-image-preview",
-      contents: {
-        parts: [
-          { text: prompt },
-          { inlineData: { data: base64Data, mimeType } },
-        ],
-      },
-      config: {
-        responseModalities: ["IMAGE", "TEXT"],
-      },
-    });
+    // Retry logic with exponential backoff for 503 errors
+    let response;
+    let lastError;
+
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        if (attempt > 0) {
+          const delayMs = INITIAL_DELAY_MS * Math.pow(2, attempt - 1);
+          console.log(`Retry attempt ${attempt + 1}/${MAX_RETRIES} after ${delayMs}ms delay...`);
+          await sleep(delayMs);
+        }
+
+        response = await ai.models.generateContent({
+          model: "gemini-3-pro-image-preview",
+          contents: {
+            parts: [
+              { text: prompt },
+              { inlineData: { data: base64Data, mimeType } },
+            ],
+          },
+          config: {
+            responseModalities: ["IMAGE", "TEXT"],
+          },
+        });
+        break; // Success, exit retry loop
+      } catch (retryErr) {
+        lastError = retryErr;
+        const errMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
+        console.log(`Attempt ${attempt + 1} failed:`, errMsg);
+
+        // Only retry on 503/overload errors
+        if (!errMsg.includes("503") && !errMsg.toLowerCase().includes("overload")) {
+          throw retryErr; // Non-retryable error
+        }
+
+        if (attempt === MAX_RETRIES - 1) {
+          return NextResponse.json(
+            { error: "The AI model is currently overloaded. Please try again in a few moments." },
+            { status: 503 }
+          );
+        }
+      }
+    }
+
+    if (!response) {
+      const message = lastError instanceof Error ? lastError.message : "Unknown error";
+      return NextResponse.json({ error: message }, { status: 500 });
+    }
 
     const parts = response.candidates?.[0]?.content?.parts;
     console.log("Gemini response parts count:", parts?.length);
