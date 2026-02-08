@@ -1,17 +1,13 @@
 import * as THREE from "three";
 import type { LandmarkPoint } from "../mediapipe";
 import type { SimulationState } from "./types";
-import {
-  simpleVertexShader,
-  simpleFragmentShader,
-} from "./shaders";
 
 export class MeshRenderer {
   private scene: THREE.Scene;
   private camera: THREE.OrthographicCamera;
   private renderer: THREE.WebGLRenderer;
   private mesh: THREE.Mesh | null = null;
-  private material: THREE.ShaderMaterial | null = null;
+  private material: THREE.MeshBasicMaterial | null = null;
   private texture: THREE.Texture | null = null;
   private landmarks: LandmarkPoint[] | null = null;
 
@@ -36,9 +32,9 @@ export class MeshRenderer {
     // Setup scene
     this.scene = new THREE.Scene();
 
-    // Orthographic camera for 2D rendering
+    // Orthographic camera for 2D rendering - covers -1 to 1 on both axes
     this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
-    this.camera.position.z = 1;
+    this.camera.position.z = 5;
   }
 
   /**
@@ -50,39 +46,39 @@ export class MeshRenderer {
   ): Promise<void> {
     this.landmarks = landmarks;
 
-    // Load texture from image
+    // Load texture from data URL
     const textureLoader = new THREE.TextureLoader();
-    this.texture = await new Promise((resolve, reject) => {
+
+    this.texture = await new Promise<THREE.Texture>((resolve, reject) => {
       textureLoader.load(
         imageDataUrl,
         (tex) => {
           tex.minFilter = THREE.LinearFilter;
           tex.magFilter = THREE.LinearFilter;
           tex.colorSpace = THREE.SRGBColorSpace;
+          tex.needsUpdate = true;
           resolve(tex);
         },
         undefined,
-        reject
+        (err) => reject(err)
       );
     });
 
-    // Create a simple plane geometry that covers the full view
+    // Create a plane that fills the view
     const geometry = new THREE.PlaneGeometry(2, 2);
 
-    // Simple material that shows the texture
-    this.material = new THREE.ShaderMaterial({
-      vertexShader: simpleVertexShader,
-      fragmentShader: simpleFragmentShader,
-      uniforms: {
-        faceTexture: { value: this.texture },
-      },
+    // Use basic material with the texture
+    this.material = new THREE.MeshBasicMaterial({
+      map: this.texture,
+      side: THREE.FrontSide,
     });
 
-    // Create mesh
+    // Create and add mesh
     this.mesh = new THREE.Mesh(geometry, this.material);
+    this.mesh.position.z = 0;
     this.scene.add(this.mesh);
 
-    // Initial render
+    // Render
     this.render();
 
     console.log("MeshRenderer initialized with", landmarks.length, "landmarks");
