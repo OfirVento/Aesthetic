@@ -7,8 +7,6 @@ import { detectFaceLandmarks } from "@/lib/mediapipe";
 
 interface MeshSimulatorProps {
   imageDataUrl: string;
-  width?: number;
-  height?: number;
   simulationState: SimulationState;
   onReady?: () => void;
   onError?: (error: Error) => void;
@@ -23,8 +21,6 @@ export const MeshSimulator = forwardRef<MeshSimulatorRef, MeshSimulatorProps>(
   function MeshSimulator(
     {
       imageDataUrl,
-      width = 512,
-      height = 512,
       simulationState,
       onReady,
       onError,
@@ -32,10 +28,13 @@ export const MeshSimulator = forwardRef<MeshSimulatorRef, MeshSimulatorProps>(
     },
     ref
   ) {
+    const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const rendererRef = useRef<MeshRenderer | null>(null);
     const [isInitialized, setIsInitialized] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [dimensions, setDimensions] = useState({ width: 512, height: 512 });
+    const initializingRef = useRef(false);
 
     // Expose methods via ref
     useImperativeHandle(ref, () => ({
@@ -45,14 +44,15 @@ export const MeshSimulator = forwardRef<MeshSimulatorRef, MeshSimulatorProps>(
       },
     }));
 
-    // Initialize renderer when image changes
+    // Initialize renderer when image changes (but NOT when simulationState changes)
     useEffect(() => {
-      if (!canvasRef.current || !imageDataUrl) return;
+      if (!canvasRef.current || !imageDataUrl || initializingRef.current) return;
 
       const initRenderer = async () => {
+        initializingRef.current = true;
+
         try {
           setError(null);
-          setIsInitialized(false);
 
           // Clean up previous renderer
           if (rendererRef.current) {
@@ -60,7 +60,7 @@ export const MeshSimulator = forwardRef<MeshSimulatorRef, MeshSimulatorProps>(
             rendererRef.current = null;
           }
 
-          // Create image element to detect landmarks
+          // Create image element to get dimensions and detect landmarks
           const img = new Image();
           img.crossOrigin = "anonymous";
 
@@ -70,17 +70,34 @@ export const MeshSimulator = forwardRef<MeshSimulatorRef, MeshSimulatorProps>(
             img.src = imageDataUrl;
           });
 
+          // Calculate dimensions maintaining aspect ratio
+          const maxWidth = 600;
+          const maxHeight = 600;
+          let width = img.naturalWidth;
+          let height = img.naturalHeight;
+
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
+
+          setDimensions({ width: Math.round(width), height: Math.round(height) });
+
           // Detect face landmarks
           const landmarks = await detectFaceLandmarks(img);
           if (!landmarks) {
             throw new Error("No face detected in image");
           }
 
-          // Create renderer
+          // Create renderer with correct dimensions
           rendererRef.current = new MeshRenderer(
             canvasRef.current!,
-            width,
-            height
+            Math.round(width),
+            Math.round(height)
           );
           await rendererRef.current.initialize(imageDataUrl, landmarks);
 
@@ -90,6 +107,8 @@ export const MeshSimulator = forwardRef<MeshSimulatorRef, MeshSimulatorProps>(
           const error = err instanceof Error ? err : new Error(String(err));
           setError(error.message);
           onError?.(error);
+        } finally {
+          initializingRef.current = false;
         }
       };
 
@@ -101,9 +120,11 @@ export const MeshSimulator = forwardRef<MeshSimulatorRef, MeshSimulatorProps>(
           rendererRef.current = null;
         }
       };
-    }, [imageDataUrl, width, height, onReady, onError]);
+    // Only re-run when imageDataUrl changes, not simulationState
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [imageDataUrl]);
 
-    // Update renderer when simulation state changes
+    // Update renderer when simulation state changes (separate effect)
     useEffect(() => {
       if (rendererRef.current && isInitialized) {
         rendererRef.current.updateSimulation(simulationState);
@@ -111,42 +132,44 @@ export const MeshSimulator = forwardRef<MeshSimulatorRef, MeshSimulatorProps>(
     }, [simulationState, isInitialized]);
 
     return (
-    <div className={`relative ${className}`}>
-      {/* Canvas for WebGL rendering */}
-      <canvas
-        ref={canvasRef}
-        width={width}
-        height={height}
-        className="w-full h-auto rounded-lg"
-        style={{ display: isInitialized ? "block" : "none" }}
-      />
+      <div ref={containerRef} className={`relative ${className}`}>
+        {/* Canvas - always visible once we have dimensions */}
+        <canvas
+          ref={canvasRef}
+          width={dimensions.width}
+          height={dimensions.height}
+          className="rounded-lg block"
+          style={{
+            width: dimensions.width,
+            height: dimensions.height,
+            backgroundColor: '#1a1a2e'
+          }}
+        />
 
-      {/* Loading state */}
-      {!isInitialized && !error && (
-        <div
-          className="flex items-center justify-center bg-gray-900 rounded-lg"
-          style={{ width, height }}
-        >
-          <div className="text-center text-gray-400">
-            <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2" />
-            <p>Initializing 3D mesh...</p>
+        {/* Loading overlay - shown on top of canvas */}
+        {!isInitialized && !error && (
+          <div
+            className="absolute inset-0 flex items-center justify-center bg-gray-900/80 rounded-lg"
+          >
+            <div className="text-center text-gray-400">
+              <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2" />
+              <p>Detecting face...</p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Error state */}
-      {error && (
-        <div
-          className="flex items-center justify-center bg-red-900/20 rounded-lg border border-red-500/50"
-          style={{ width, height }}
-        >
-          <div className="text-center text-red-400 p-4">
-            <p className="font-medium">Failed to initialize</p>
-            <p className="text-sm mt-1">{error}</p>
+        {/* Error overlay */}
+        {error && (
+          <div
+            className="absolute inset-0 flex items-center justify-center bg-red-900/20 rounded-lg border border-red-500/50"
+          >
+            <div className="text-center text-red-400 p-4">
+              <p className="font-medium">Failed to initialize</p>
+              <p className="text-sm mt-1">{error}</p>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
     );
   }
 );

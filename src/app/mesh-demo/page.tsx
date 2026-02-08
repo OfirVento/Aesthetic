@@ -116,8 +116,6 @@ export default function MeshDemoPage() {
                 <MeshSimulator
                   ref={simulatorRef}
                   imageDataUrl={imageUrl}
-                  width={512}
-                  height={512}
                   simulationState={state}
                   onReady={() => setIsReady(true)}
                   onError={(err) => console.error("Simulator error:", err)}

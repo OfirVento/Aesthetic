@@ -18,6 +18,12 @@ export class MeshRenderer {
     this.width = width;
     this.height = height;
 
+    // Set canvas size explicitly
+    canvas.width = width;
+    canvas.height = height;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+
     // Setup renderer
     this.renderer = new THREE.WebGLRenderer({
       canvas,
@@ -25,8 +31,8 @@ export class MeshRenderer {
       alpha: false,
       preserveDrawingBuffer: true,
     });
-    this.renderer.setSize(width, height);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setSize(width, height, false); // false = don't update style
+    this.renderer.setPixelRatio(1); // Keep 1:1 for crisp rendering
     this.renderer.setClearColor(0x1a1a2e, 1);
 
     // Setup scene
