@@ -126,6 +126,9 @@ export const MeshSimulator = forwardRef<MeshSimulatorRef, MeshSimulatorProps>(
 
     // Update renderer when simulation state changes (separate effect)
     useEffect(() => {
+      const hasFillers = Object.keys(simulationState.fillerValues).length > 0;
+      const hasBotox = Object.keys(simulationState.botoxValues).length > 0;
+      console.log("[MeshSimulator] Effect fired. isInitialized:", isInitialized, "hasRenderer:", !!rendererRef.current, "hasFillers:", hasFillers, "hasBotox:", hasBotox);
       if (rendererRef.current && isInitialized) {
         rendererRef.current.updateSimulation(simulationState);
       }
