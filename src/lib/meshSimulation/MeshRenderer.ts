@@ -13,7 +13,7 @@ const GRID_RES = 80;
  * How far (in normalised -1…1 space) a grid vertex can be from a
  * landmark and still be affected by its morph target.
  */
-const INFLUENCE_RADIUS = 0.12;
+const INFLUENCE_RADIUS = 0.28;
 
 export class MeshRenderer {
   private scene: THREE.Scene;
@@ -125,7 +125,10 @@ export class MeshRenderer {
   //  Apply simulation state  (called on every slider change)
   // ────────────────────────────────────────────────────────────────────
   updateSimulation(state: SimulationState): void {
-    if (!this.geometry || !this.originalPositions) return;
+    if (!this.geometry || !this.originalPositions) {
+      console.warn("[MeshRenderer] updateSimulation called but geometry/positions not ready");
+      return;
+    }
 
     const posAttr = this.geometry.getAttribute("position") as THREE.BufferAttribute;
     const pos = posAttr.array as Float32Array;
@@ -133,6 +136,14 @@ export class MeshRenderer {
 
     // Reset to flat grid
     pos.set(this.originalPositions);
+
+    // Debug: log active filler values
+    const activeFillers = Object.entries(state.fillerValues).filter(([, v]) => v > 0);
+    if (activeFillers.length > 0) {
+      console.log("[MeshRenderer] Active fillers:", activeFillers.map(([k, v]) => `${k}=${v.toFixed(2)}`).join(", "));
+    }
+
+    let totalVertsMoved = 0;
 
     // ── Fillers: push grid vertices outward near affected landmarks ──
     for (const target of FILLER_MORPH_TARGETS) {
@@ -194,6 +205,7 @@ export class MeshRenderer {
         if (useCustomXY) {
           pos[vi * 3] += customNx * disp;
           pos[vi * 3 + 1] += customNy * disp;
+          totalVertsMoved++;
         } else {
           // Radial outward from region centroid
           const rx = gx - cx;
@@ -202,8 +214,13 @@ export class MeshRenderer {
           if (rLen < 0.001) continue;
           pos[vi * 3] += (rx / rLen) * disp;
           pos[vi * 3 + 1] += (ry / rLen) * disp;
+          totalVertsMoved++;
         }
       }
+    }
+
+    if (activeFillers.length > 0) {
+      console.log("[MeshRenderer] Vertices displaced:", totalVertsMoved, "of", vertCount);
     }
 
     posAttr.needsUpdate = true;

@@ -18,7 +18,7 @@ export const FILLER_MORPH_TARGETS: MorphTarget[] = [
       308, 415, 310, 311, 312, 13, 82, 81, 80, 191, 78,
     ],
     deformationType: "normal",
-    maxDisplacement: 0.03, // Max outward expansion
+    maxDisplacement: 0.12,
   },
   {
     name: "lips_lower_volume",
@@ -30,7 +30,7 @@ export const FILLER_MORPH_TARGETS: MorphTarget[] = [
       308, 324, 318, 402, 317, 14, 87, 178, 88, 95, 78,
     ],
     deformationType: "normal",
-    maxDisplacement: 0.035,
+    maxDisplacement: 0.14,
   },
   {
     name: "lips_vermilion_definition",
@@ -42,7 +42,7 @@ export const FILLER_MORPH_TARGETS: MorphTarget[] = [
       375, 321, 405, 314, 17, 84, 181, 91, 146,
     ],
     deformationType: "normal",
-    maxDisplacement: 0.015,
+    maxDisplacement: 0.06,
   },
   {
     name: "lips_cupids_bow",
@@ -54,7 +54,7 @@ export const FILLER_MORPH_TARGETS: MorphTarget[] = [
     ],
     deformationType: "custom",
     customDirection: { x: 0, y: -0.7, z: 0.7 }, // Up and out
-    maxDisplacement: 0.02,
+    maxDisplacement: 0.08,
   },
   {
     name: "lips_corners_lift",
@@ -67,7 +67,7 @@ export const FILLER_MORPH_TARGETS: MorphTarget[] = [
     ],
     deformationType: "custom",
     customDirection: { x: 0, y: -0.8, z: 0.3 }, // Upward lift
-    maxDisplacement: 0.025,
+    maxDisplacement: 0.10,
   },
 
   // ============================================================================
@@ -86,7 +86,7 @@ export const FILLER_MORPH_TARGETS: MorphTarget[] = [
       400, 369, 395, 378, 379, 365, 397, 435, 401, 366,
     ],
     deformationType: "normal",
-    maxDisplacement: 0.04,
+    maxDisplacement: 0.16,
   },
   {
     name: "midface_volume",
@@ -97,7 +97,7 @@ export const FILLER_MORPH_TARGETS: MorphTarget[] = [
       331, 294, 278, 429, 355, 371, 266, 329, 348, 347, 346, 345,
     ],
     deformationType: "normal",
-    maxDisplacement: 0.035,
+    maxDisplacement: 0.14,
   },
   {
     name: "nasolabial_fill",
@@ -109,7 +109,7 @@ export const FILLER_MORPH_TARGETS: MorphTarget[] = [
       314, 405, 321, 375, 291, 409, 270, 269, 4, 275, 440, 344, 278, 331,
     ],
     deformationType: "normal",
-    maxDisplacement: 0.025,
+    maxDisplacement: 0.10,
   },
 
   // ============================================================================
@@ -126,7 +126,7 @@ export const FILLER_MORPH_TARGETS: MorphTarget[] = [
       340, 346, 347, 348, 349, 350, 357, 465, 417, 351,
     ],
     deformationType: "normal",
-    maxDisplacement: 0.02,
+    maxDisplacement: 0.08,
   },
 
   // ============================================================================
@@ -142,8 +142,8 @@ export const FILLER_MORPH_TARGETS: MorphTarget[] = [
       175, 171, 152, 396, 400,
     ],
     deformationType: "custom",
-    customDirection: { x: 0, y: 0, z: 1 }, // Forward projection
-    maxDisplacement: 0.04,
+    customDirection: { x: 0, y: 1, z: 0 }, // Downward projection (visible in 2D)
+    maxDisplacement: 0.16,
   },
   {
     name: "jawline_definition",
@@ -154,7 +154,7 @@ export const FILLER_MORPH_TARGETS: MorphTarget[] = [
       361, 435, 401, 366, 447, 264, 34, 227, 137, 177, 215,
     ],
     deformationType: "normal",
-    maxDisplacement: 0.03,
+    maxDisplacement: 0.12,
   },
   {
     name: "marionette_fill",
@@ -165,7 +165,7 @@ export const FILLER_MORPH_TARGETS: MorphTarget[] = [
       291, 273, 335, 406, 313, 18, 17, 314, 405, 321, 375,
     ],
     deformationType: "normal",
-    maxDisplacement: 0.02,
+    maxDisplacement: 0.08,
   },
   {
     name: "prejowl_fill",
@@ -176,7 +176,7 @@ export const FILLER_MORPH_TARGETS: MorphTarget[] = [
       288, 397, 435, 401, 366, 447, 264, 372, 340, 346,
     ],
     deformationType: "normal",
-    maxDisplacement: 0.025,
+    maxDisplacement: 0.10,
   },
 
   // ============================================================================
@@ -191,8 +191,8 @@ export const FILLER_MORPH_TARGETS: MorphTarget[] = [
       327, 294, 331, 279, 278, 439, 344, 275,
     ],
     deformationType: "custom",
-    customDirection: { x: 0, y: 0, z: 1 }, // Forward
-    maxDisplacement: 0.02,
+    customDirection: { x: 0, y: -1, z: 0 }, // Widen outward (visible in 2D)
+    maxDisplacement: 0.08,
   },
   {
     name: "nose_tip_projection",
@@ -202,8 +202,8 @@ export const FILLER_MORPH_TARGETS: MorphTarget[] = [
       1, 2, 98, 240, 64, 48, 115, 4, 344, 275, 294, 460, 327,
     ],
     deformationType: "custom",
-    customDirection: { x: 0, y: -0.3, z: 0.95 }, // Forward and slightly up
-    maxDisplacement: 0.015,
+    customDirection: { x: 0, y: 1, z: 0 }, // Downward projection (visible in 2D)
+    maxDisplacement: 0.06,
   },
 ];
 
