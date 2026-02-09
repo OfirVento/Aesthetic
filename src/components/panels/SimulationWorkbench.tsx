@@ -94,7 +94,10 @@ export default function SimulationWorkbench() {
 
     // Build the task prompt using configurable prompts from store
     const taskPrompt = buildInpaintPrompt(selectedSubRegion, controlValues, prompts, notes);
-    if (!taskPrompt) return;
+    if (!taskPrompt) {
+      setError("No changes to apply. Adjust the sliders above 0% first.");
+      return;
+    }
 
     // Build the full prompt with system wrapper
     const fullPrompt = buildFullPrompt(taskPrompt, prompts.systemPrompt);
@@ -120,7 +123,7 @@ export default function SimulationWorkbench() {
       }
 
       // Call Gemini API for image generation
-      const outputImage = await generateEditedImage(sourceImage, fullPrompt);
+      const outputImage = await generateEditedImage(sourceImage, fullPrompt, maskData);
 
       const subRegionConfig = getSubRegionConfig(selectedSubRegion);
       const categoryConfig = getCategoryForSubRegion(selectedSubRegion);

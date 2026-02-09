@@ -4,16 +4,18 @@
  */
 export async function generateEditedImage(
   imageDataUrl: string,
-  prompt: string
+  prompt: string,
+  maskDataUrl?: string
 ): Promise<string> {
   console.log("=== CLIENT: Sending to /api/inpaint ===");
   console.log("Prompt:", prompt);
   console.log("Image data length:", imageDataUrl.length);
+  if (maskDataUrl) console.log("Mask data length:", maskDataUrl.length);
 
   const res = await fetch("/api/inpaint", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ imageDataUrl, prompt }),
+    body: JSON.stringify({ imageDataUrl, prompt, maskDataUrl }),
   });
 
   if (!res.ok) {

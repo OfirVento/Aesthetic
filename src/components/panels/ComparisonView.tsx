@@ -1,10 +1,16 @@
 "use client";
 
+import { useMemo } from "react";
 import { useSessionStore } from "@/lib/store/session";
 
 export default function ComparisonView() {
-  const { capturedImage, activeImage, isProcessing, maskOverlay, selectedRegion } =
+  const { capturedImage, activeImage, isProcessing, maskOverlay, selectedRegion, controlValues, selectedSubRegion } =
     useSessionStore();
+
+  // Show a visual hint on the Design panel when sliders have values but haven't been applied yet
+  const hasUnappliedChanges = useMemo(() => {
+    return selectedSubRegion && Object.values(controlValues).some((v) => v > 0);
+  }, [selectedSubRegion, controlValues]);
 
   return (
     <div className="flex-1 p-6 flex gap-6 min-h-0 items-stretch justify-center">
@@ -72,6 +78,11 @@ export default function ComparisonView() {
           <div className="absolute top-5 right-5 px-4 py-2 bg-stone-900/90 backdrop-blur-md rounded-full text-[10px] font-black tracking-widest uppercase text-white/95 border border-white/10 shadow-lg">
             Active Design
           </div>
+          {hasUnappliedChanges && !isProcessing && (
+            <div className="absolute bottom-5 left-1/2 -translate-x-1/2 px-4 py-2 bg-amber-500/90 backdrop-blur-md rounded-full text-[9px] font-black tracking-widest uppercase text-white shadow-lg animate-pulse">
+              Press Apply to Generate
+            </div>
+          )}
         </div>
       </div>
     </div>

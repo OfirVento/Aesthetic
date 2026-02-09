@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { imageDataUrl, prompt } = await req.json();
+    const { imageDataUrl, prompt, maskDataUrl } = await req.json();
 
     if (!imageDataUrl || !prompt) {
       return NextResponse.json(
@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
     console.log("Full prompt being sent to Gemini:");
     console.log(prompt);
     console.log("Image data length:", imageDataUrl.length);
+    if (maskDataUrl) console.log("Mask data length:", maskDataUrl.length);
     console.log("=======================");
 
     const ai = new GoogleGenAI({ apiKey: API_KEY });
@@ -45,6 +46,24 @@ export async function POST(req: NextRequest) {
 
     const mimeMatch = imageDataUrl.match(/^data:(image\/\w+);base64,/);
     const mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
+
+    // Build parts array: prompt + image + optional mask
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const parts: any[] = [
+      { text: prompt },
+      { inlineData: { data: base64Data, mimeType } },
+    ];
+
+    // Include mask if provided for region-targeted editing
+    if (maskDataUrl) {
+      const maskBase64 = maskDataUrl.split(",")[1];
+      if (maskBase64) {
+        const maskMimeMatch = maskDataUrl.match(/^data:(image\/\w+);base64,/);
+        const maskMime = maskMimeMatch ? maskMimeMatch[1] : "image/png";
+        parts.push({ text: "The following mask image shows the exact region to edit (white = edit area, black = preserve):" });
+        parts.push({ inlineData: { data: maskBase64, mimeType: maskMime } });
+      }
+    }
 
     // Send the prompt directly - client has already built the full prompt
     // Retry logic with exponential backoff for 503 errors
@@ -62,10 +81,7 @@ export async function POST(req: NextRequest) {
         response = await ai.models.generateContent({
           model: "gemini-3-pro-image-preview",
           contents: {
-            parts: [
-              { text: prompt },
-              { inlineData: { data: base64Data, mimeType } },
-            ],
+            parts,
           },
           config: {
             responseModalities: ["IMAGE", "TEXT"],
@@ -96,15 +112,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: message }, { status: 500 });
     }
 
-    const parts = response.candidates?.[0]?.content?.parts;
-    console.log("Gemini response parts count:", parts?.length);
+    const responseParts = response.candidates?.[0]?.content?.parts;
+    console.log("Gemini response parts count:", responseParts?.length);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    parts?.forEach((p: any, i: number) => {
+    responseParts?.forEach((p: any, i: number) => {
       if (p.text) console.log(`Part ${i} (text):`, p.text);
       if (p.inlineData) console.log(`Part ${i} (image): ${p.inlineData.data?.length} chars of base64`);
     });
 
-    if (!parts) {
+    if (!responseParts) {
       return NextResponse.json(
         { error: "No response from Gemini" },
         { status: 502 }
@@ -112,10 +128,10 @@ export async function POST(req: NextRequest) {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const imagePart = parts.find((p: any) => p.inlineData);
+    const imagePart = responseParts.find((p: any) => p.inlineData);
     if (!imagePart?.inlineData?.data) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const textPart = parts.find((p: any) => p.text);
+      const textPart = responseParts.find((p: any) => p.text);
       const textMsg = textPart?.text || "No image generated";
       console.log("Gemini returned text instead of image:", textMsg);
       return NextResponse.json(
