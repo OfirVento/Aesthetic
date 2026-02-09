@@ -1,6 +1,12 @@
 // We cannot import FaceMesh at the top level because it breaks SSR build
 // We will dynamically import it inside the initialize function
 
+export interface LandmarkPoint {
+    x: number;
+    y: number;
+    z: number;
+}
+
 let faceMeshInstance: any = null;
 
 export const initFaceMesh = async () => {
@@ -40,4 +46,17 @@ export const detectFace = (imageElement: HTMLImageElement): Promise<any> => {
 
         await mesh.send({ image: imageElement });
     });
+};
+
+export const detectFaceLandmarks = async (imageElement: HTMLImageElement): Promise<LandmarkPoint[] | null> => {
+    try {
+        const results = await detectFace(imageElement);
+        if (results && results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+            return results.multiFaceLandmarks[0] as LandmarkPoint[];
+        }
+        return null;
+    } catch (error) {
+        console.error('Face detection failed:', error);
+        return null;
+    }
 };
