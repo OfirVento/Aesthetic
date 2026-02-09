@@ -1,43 +1,92 @@
 import { create } from 'zustand';
-import { AppState, SimulationRegion, SimulationState } from '@/types';
+import { SimulationState, SimulationRegion } from '@/types';
 
-const INITIAL_REGION_STATE: SimulationState = {
-    LIPS: { volume: 0, projection: 0, definition: 0, width: 0 },
-    JAWLINE: { definition: 0, contour: 0, angle: 0 },
-    CHIN: { projection: 0, length: 0, width: 0 },
-    CHEEKS: { volume: 0, lift: 0, projection: 0 },
-    NASOLABIAL: { smoothing: 0, depth_reduction: 0 },
-    UPPER_FACE: { relaxation: 0, lift: 0, smoothing: 0 },
-    TEAR_TROUGHS: { fill: 0, smoothing: 0 },
-    NOSE: { bridge_height: 0, tip_projection: 0, width: 0 },
-};
+interface SessionStore {
+    // Phase 1: Basic View + Scan Step
+    step: 'SCAN' | 'SIMULATION' | 'RESULTS';
+    setStep: (step: 'SCAN' | 'SIMULATION' | 'RESULTS') => void;
 
-export const useStore = create<AppState>((set) => ({
-    currentStep: 'SIMULATION', // Defaulting to SIMULATION for dev speed as requested
-    originalImage: null,
-    currentDesignImage: null,
-    activeRegion: null,
-    simulationState: INITIAL_REGION_STATE,
-    history: [],
+    originalImage: string | null; // Base64 or URL
+    setOriginalImage: (url: string | null) => void;
 
-    setStep: (step) => set({ currentStep: step }),
-    setOriginalImage: (url) => set({ originalImage: url, currentDesignImage: url }),
-    setActiveRegion: (region) => set({ activeRegion: region }),
+    currentDesignImage: string | null; // The one currently being viewed/edited
+    setCurrentDesignImage: (url: string | null) => void;
 
-    updateRegionControl: (region, control, value) =>
-        set((state) => ({
+    activeRegion: SimulationRegion | null;
+    setActiveRegion: (region: SimulationRegion | null) => void;
+
+    isGenerating: boolean;
+    setIsGenerating: (loading: boolean) => void;
+
+    simulationState: SimulationState;
+    updateRegionControl: (region: SimulationRegion, controlId: string, value: number) => void;
+
+    history: Array<{
+        id: string;
+        timestamp: number;
+        originalImage: string; // The base for this generation
+        resultImage: string;   // The output
+        region: SimulationRegion;
+        controls: Record<string, number>;
+    }>;
+    addToHistory: (entry: any) => void;
+}
+
+import { persist, createJSONStorage } from 'zustand/middleware';
+
+export const useStore = create<SessionStore>()(
+    persist(
+        (set) => ({
+            step: 'SCAN',
+            setStep: (step) => set({ step }),
+
+            originalImage: null,
+            setOriginalImage: (url) => set({ originalImage: url, currentDesignImage: null, history: [], step: 'SIMULATION' }),
+
+            currentDesignImage: null,
+            setCurrentDesignImage: (url) => set({ currentDesignImage: url }),
+
+            activeRegion: null,
+            setActiveRegion: (region) => set({ activeRegion: region }),
+
+            isGenerating: false,
+            setIsGenerating: (loading) => set({ isGenerating: loading }),
+
             simulationState: {
-                ...state.simulationState,
-                [region]: {
-                    ...state.simulationState[region],
-                    [control]: value,
-                },
+                LIPS: {},
+                JAWLINE: {},
+                CHIN: {},
+                CHEEKS: {},
+                NASOLABIAL: {},
+                UPPER_FACE: {},
+                TEAR_TROUGHS: {},
+                NOSE: {}
             },
-        })),
+            updateRegionControl: (region, controlId, value) =>
+                set((state) => ({
+                    simulationState: {
+                        ...state.simulationState,
+                        [region]: {
+                            ...state.simulationState[region],
+                            [controlId]: value
+                        }
+                    }
+                })),
 
-    addToHistory: (item) =>
-        set((state) => ({
-            history: [...state.history, item],
-            currentDesignImage: item.resultImage
-        })),
-}));
+            history: [],
+            addToHistory: (entry) => set((state) => ({
+                history: [entry, ...state.history],
+                currentDesignImage: entry.resultImage
+            }))
+        }),
+        {
+            name: 'ag-aesthetic-storage',
+            storage: createJSONStorage(() => localStorage),
+            partialize: (state) => ({
+                history: state.history,
+                originalImage: state.originalImage,
+                simulationState: state.simulationState
+            })
+        }
+    )
+);

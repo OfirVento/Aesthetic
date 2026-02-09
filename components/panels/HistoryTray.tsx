@@ -4,13 +4,18 @@ import { cn } from '@/lib/utils';
 import { Clock } from 'lucide-react';
 
 export const HistoryTray = () => {
-    const { history, currentDesignImage, originalImage, setOriginalImage } = useStore();
+    const { history, currentDesignImage, originalImage, setCurrentDesignImage } = useStore();
+    const scrollRef = React.useRef<HTMLDivElement>(null);
+
+    // Auto-scroll to start when history updates
+    React.useEffect(() => {
+        if (scrollRef.current) {
+            scrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+        }
+    }, [history.length]);
 
     const handleSelect = (url: string) => {
-        // In a real app we might want a proper 'setActiveVersion' action
-        // For now we just piggyback on setOriginalImage to update the view, 
-        // but conceptually we should probably split 'original' vs 'viewing'
-        useStore.setState({ currentDesignImage: url });
+        setCurrentDesignImage(url);
     };
 
     const isCurrent = (url: string) => currentDesignImage === url;
@@ -28,7 +33,7 @@ export const HistoryTray = () => {
             </div>
 
             {/* Scrollable List */}
-            <div className="flex-1 flex gap-4 overflow-x-auto no-scrollbar items-center h-full py-4 px-2">
+            <div ref={scrollRef} className="flex-1 flex gap-4 overflow-x-auto no-scrollbar items-center h-full py-4 px-2">
 
                 {/* Original */}
                 {originalImage && (

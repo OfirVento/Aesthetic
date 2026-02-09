@@ -6,8 +6,7 @@ import { cn } from '@/lib/utils';
 import { buildClinicalPrompt } from '@/lib/prompts';
 
 export const ContextualPanel = () => {
-    const { activeRegion, simulationState, updateRegionControl, setActiveRegion, currentDesignImage, addToHistory } = useStore();
-    const [isGenerating, setIsGenerating] = useState(false);
+    const { activeRegion, simulationState, updateRegionControl, setActiveRegion, currentDesignImage, originalImage, addToHistory, isGenerating, setIsGenerating } = useStore();
 
     if (!activeRegion) return null;
 
@@ -15,44 +14,104 @@ export const ContextualPanel = () => {
     if (!controls) return null;
 
     const handleApply = async () => {
-        if (!currentDesignImage) return;
+        if (!activeRegion) return;
+
+        // Strict iterative mode: Always start from the original image if available
+        const baseImage = originalImage || currentDesignImage;
+        console.log("Using Base Image:", originalImage ? "ORIGINAL (Standard)" : "CURRENT (Fallback)");
+
+        if (!baseImage) {
+            alert("No image loaded");
+            return;
+        }
 
         const prompt = buildClinicalPrompt(activeRegion, simulationState);
+        console.log("Generating with prompt:", prompt);
+
         if (!prompt) {
-            // No changes to apply
+            alert("Please adjust at least one slider to generate a change.");
             return;
         }
 
         setIsGenerating(true);
+
         try {
+            // 1. Resize Image to avoid Payload limits (Max 4.5MB Vercel)
+            // Goal: Max dimension 1024px, JPEG 0.8 quality
+            const resizedImage = await new Promise<string>((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const maxDim = 1024;
+
+                    if (width > maxDim || height > maxDim) {
+                        if (width > height) {
+                            height = Math.round((height * maxDim) / width);
+                            width = maxDim;
+                        } else {
+                            width = Math.round((width * maxDim) / height);
+                            height = maxDim;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) { reject("No context"); return; }
+
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.85)); // efficient JPEG
+                };
+                img.onerror = reject;
+                img.src = baseImage;
+            });
+
+            console.log("Original Len:", baseImage.length, "Resized Len:", resizedImage.length);
+
             const res = await fetch('/api/inpaint', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    image: currentDesignImage,
+                    image: resizedImage,
                     prompt: prompt
                 })
             });
 
+            if (!res.ok) {
+                const errText = await res.text();
+                // Try to parse JSON error if possible
+                try {
+                    const errJson = JSON.parse(errText);
+                    throw new Error(errJson.error || res.statusText);
+                } catch (e) {
+                    throw new Error(errText || res.statusText);
+                }
+            }
+
             const data = await res.json();
+
             if (data.success && data.image) {
+                // Add to history
                 addToHistory({
-                    id: Date.now().toString(),
+                    id: crypto.randomUUID(),
                     timestamp: Date.now(),
-                    originalImage: currentDesignImage,
+                    originalImage: baseImage,
                     resultImage: data.image,
                     region: activeRegion,
                     controls: { ...simulationState[activeRegion] }
                 });
-                // Optionally close panel or keep open? Let's keep open for refinement
+
+                // KEEP PANEL OPEN
+                // setActiveRegion(null); <--- REMOVED
             } else {
-                console.error("Generation failed", data.error);
-                alert("Simulation failed: " + data.error);
+                throw new Error(data.error || "API returned success:false");
             }
 
-        } catch (e) {
-            console.error(e);
-            alert("Network error");
+        } catch (error) {
+            console.error(error);
+            alert("Simulation failed: " + (error as Error).message);
         } finally {
             setIsGenerating(false);
         }

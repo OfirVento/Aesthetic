@@ -1,36 +1,40 @@
-import { FaceMesh } from '@mediapipe/face_mesh';
-import { Camera } from '@mediapipe/camera_utils';
+// We cannot import FaceMesh at the top level because it breaks SSR build
+// We will dynamically import it inside the initialize function
 
-let faceMesh: FaceMesh | null = null;
+let faceMeshInstance: any = null;
 
 export const initFaceMesh = async () => {
-    if (faceMesh) return faceMesh;
+    if (typeof window === 'undefined') return null; // Server guard
+    if (faceMeshInstance) return faceMeshInstance;
 
-    faceMesh = new FaceMesh({
+    // Dynamic import
+    const { FaceMesh } = await import('@mediapipe/face_mesh');
+
+    faceMeshInstance = new FaceMesh({
         locateFile: (file) => {
             return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
         }
     });
 
-    faceMesh.setOptions({
+    faceMeshInstance.setOptions({
         maxNumFaces: 1,
         refineLandmarks: true,
         minDetectionConfidence: 0.5,
         minTrackingConfidence: 0.5
     });
 
-    await faceMesh.initialize();
-    return faceMesh;
+    await faceMeshInstance.initialize();
+    return faceMeshInstance;
 };
 
-export const getFaceMesh = () => faceMesh;
+export const getFaceMesh = () => faceMeshInstance;
 
 export const detectFace = (imageElement: HTMLImageElement): Promise<any> => {
     return new Promise(async (resolve, reject) => {
         const mesh = await initFaceMesh();
         if (!mesh) return reject('Failed to init mesh');
 
-        mesh.onResults((results) => {
+        mesh.onResults((results: any) => {
             resolve(results);
         });
 
