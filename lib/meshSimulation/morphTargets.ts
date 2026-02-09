@@ -106,7 +106,7 @@ export const FILLER_MORPH_TARGETS: MorphTarget[] = [
     affectedVertices: [
       // Along the smile lines
       102, 48, 115, 220, 45, 4, 1, 61, 146, 91, 181, 84, 17,
-      314, 405, 321, 375, 291, 409, 270, 269, 4, 275, 440, 344, 278, 331,
+      314, 405, 321, 375, 291, 409, 270, 269, 275, 440, 344, 278, 331,
     ],
     deformationType: "normal",
     maxDisplacement: 0.10,

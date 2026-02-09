@@ -8,29 +8,37 @@ export interface LandmarkPoint {
 }
 
 let faceMeshInstance: any = null;
+let initPromise: Promise<any> | null = null;
 
 export const initFaceMesh = async () => {
     if (typeof window === 'undefined') return null; // Server guard
     if (faceMeshInstance) return faceMeshInstance;
 
-    // Dynamic import
-    const { FaceMesh } = await import('@mediapipe/face_mesh');
+    // Prevent race condition: if initialization is in progress, wait for it
+    if (initPromise) return initPromise;
 
-    faceMeshInstance = new FaceMesh({
-        locateFile: (file) => {
-            return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
-        }
-    });
+    initPromise = (async () => {
+        // Dynamic import
+        const { FaceMesh } = await import('@mediapipe/face_mesh');
 
-    faceMeshInstance.setOptions({
-        maxNumFaces: 1,
-        refineLandmarks: true,
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5
-    });
+        faceMeshInstance = new FaceMesh({
+            locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+            }
+        });
 
-    await faceMeshInstance.initialize();
-    return faceMeshInstance;
+        faceMeshInstance.setOptions({
+            maxNumFaces: 1,
+            refineLandmarks: true,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
+        await faceMeshInstance.initialize();
+        return faceMeshInstance;
+    })();
+
+    return initPromise;
 };
 
 export const getFaceMesh = () => faceMeshInstance;

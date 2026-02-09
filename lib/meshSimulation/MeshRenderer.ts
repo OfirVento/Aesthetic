@@ -253,16 +253,21 @@ export class MeshRenderer {
   dispose(): void {
     if (this.mesh) {
       this.scene.remove(this.mesh);
+      this.mesh = null;
     }
     if (this.geometry) {
       this.geometry.dispose();
+      this.geometry = null;
     }
     if (this.material) {
       this.material.dispose();
+      this.material = null;
     }
     if (this.texture) {
       this.texture.dispose();
+      this.texture = null;
     }
+    this.scene.clear();
     this.renderer.dispose();
   }
 }
