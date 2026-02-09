@@ -143,6 +143,7 @@ export class MeshRenderer {
       uniforms,
       vertexShader: faceVertexShader,
       fragmentShader: faceFragmentShader,
+      side: THREE.DoubleSide, // Render both sides — winding order may be flipped
       depthTest: true,
       depthWrite: true,
     });
@@ -151,6 +152,19 @@ export class MeshRenderer {
     this.faceMesh.renderOrder = 1;
     this.scene.add(this.faceMesh);
 
+    // DEBUG: Add wireframe overlay so we can see the face mesh triangles
+    const wireframeMat = new THREE.MeshBasicMaterial({
+      color: 0x00ff00,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.3,
+      side: THREE.DoubleSide,
+      depthTest: false,
+    });
+    const wireframeMesh = new THREE.Mesh(this.faceGeometry, wireframeMat);
+    wireframeMesh.renderOrder = 2;
+    this.scene.add(wireframeMesh);
+
     this.render();
 
     console.log(
@@ -158,7 +172,8 @@ export class MeshRenderer {
       landmarks.length,
       "landmarks,",
       meshData.indices.length / 3,
-      "triangles"
+      "triangles,",
+      "valid vertices:", numVerticesUsed(meshData.indices, landmarks.length)
     );
   }
 
@@ -179,9 +194,11 @@ export class MeshRenderer {
     // Reset to original positions
     positions.set(this.originalPositions);
 
+    let activeTargets = 0;
     for (const target of FILLER_MORPH_TARGETS) {
       const intensity = state.fillerValues[target.name] || 0;
       if (intensity <= 0) continue;
+      activeTargets++;
 
       if (target.deformationType === "custom" && target.customDirection) {
         // Custom direction — use XY components; fall back to radial if too small
@@ -231,6 +248,12 @@ export class MeshRenderer {
     }
 
     posAttr.needsUpdate = true;
+
+    console.log(
+      "[MeshRenderer] updateSimulation:",
+      activeTargets, "active filler targets,",
+      Object.keys(state.botoxValues).filter(k => (state.botoxValues[k] || 0) > 0).length, "active botox zones"
+    );
 
     // ── Botox: update shader uniforms for zone blur ────────────────────
     if (this.faceMaterial) {
@@ -296,4 +319,13 @@ export class MeshRenderer {
     }
     this.renderer.dispose();
   }
+}
+
+/** Count unique vertex indices used in the index buffer */
+function numVerticesUsed(indices: Uint16Array, maxVerts: number): number {
+  const used = new Set<number>();
+  for (let i = 0; i < indices.length; i++) {
+    if (indices[i] < maxVerts) used.add(indices[i]);
+  }
+  return used.size;
 }
