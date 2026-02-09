@@ -183,25 +183,50 @@ export class MeshRenderer {
       const intensity = state.fillerValues[target.name] || 0;
       if (intensity <= 0) continue;
 
+      if (target.deformationType === "custom" && target.customDirection) {
+        // Custom direction — use XY components; fall back to radial if too small
+        const cdx = target.customDirection.x;
+        const cdy = target.customDirection.y;
+        const xyMag = Math.sqrt(cdx * cdx + cdy * cdy);
+
+        if (xyMag > 0.2) {
+          // Custom direction has visible XY component
+          const nx = cdx / xyMag;
+          const ny = cdy / xyMag;
+          for (const vi of target.affectedVertices) {
+            if (vi >= numVertices) continue;
+            positions[vi * 3] += nx * target.maxDisplacement * intensity;
+            positions[vi * 3 + 1] += ny * target.maxDisplacement * intensity;
+          }
+          continue;
+        }
+        // else: XY too small (e.g. pure Z), fall through to radial expansion
+      }
+
+      // Radial outward expansion from region centroid (visible in 2D ortho view).
+      // The mesh is nearly flat so 3D normals point in Z — useless for ortho.
+      let cx = 0, cy = 0, count = 0;
       for (const vi of target.affectedVertices) {
         if (vi >= numVertices) continue;
+        cx += this.originalPositions[vi * 3];
+        cy += this.originalPositions[vi * 3 + 1];
+        count++;
+      }
+      if (count === 0) continue;
+      cx /= count;
+      cy /= count;
 
-        let dx: number, dy: number, dz: number;
+      for (const vi of target.affectedVertices) {
+        if (vi >= numVertices) continue;
+        const vx = this.originalPositions[vi * 3] - cx;
+        const vy = this.originalPositions[vi * 3 + 1] - cy;
+        const len = Math.sqrt(vx * vx + vy * vy);
+        if (len < 0.001) continue;
 
-        if (target.deformationType === "custom" && target.customDirection) {
-          dx = target.customDirection.x * target.maxDisplacement * intensity;
-          dy = target.customDirection.y * target.maxDisplacement * intensity;
-          dz = target.customDirection.z * target.maxDisplacement * intensity;
-        } else {
-          // Deform along vertex normal
-          dx = this.originalNormals[vi * 3] * target.maxDisplacement * intensity;
-          dy = this.originalNormals[vi * 3 + 1] * target.maxDisplacement * intensity;
-          dz = this.originalNormals[vi * 3 + 2] * target.maxDisplacement * intensity;
-        }
-
-        positions[vi * 3] += dx;
-        positions[vi * 3 + 1] += dy;
-        positions[vi * 3 + 2] += dz;
+        const nx = vx / len;
+        const ny = vy / len;
+        positions[vi * 3] += nx * target.maxDisplacement * intensity;
+        positions[vi * 3 + 1] += ny * target.maxDisplacement * intensity;
       }
     }
 
