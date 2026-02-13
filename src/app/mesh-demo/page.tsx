@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { MeshSimulator, useMeshSimulator, SimulationControls } from "@/components/simulation";
 import type { MeshSimulatorRef } from "@/components/simulation/MeshSimulator";
+import type { SimulationState } from "@/lib/meshSimulation";
 
 export default function MeshDemoPage() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -15,6 +16,32 @@ export default function MeshDemoPage() {
     setBotoxValue,
     reset,
   } = useMeshSimulator();
+
+  // Keep a ref to the latest state for use in callbacks without stale closures
+  const stateRef = useRef<SimulationState>(state);
+  stateRef.current = state;
+
+  // Direct renderer calls — bypass the broken useEffect chain
+  const handleFillerChange = useCallback((name: string, value: number) => {
+    const clamped = Math.max(0, Math.min(1, value));
+    setFillerValue(name, clamped);
+    // Construct and send state directly to renderer
+    const newState: SimulationState = {
+      fillerValues: { ...stateRef.current.fillerValues, [name]: clamped },
+      botoxValues: stateRef.current.botoxValues,
+    };
+    simulatorRef.current?.updateSimulation(newState);
+  }, [setFillerValue]);
+
+  const handleBotoxChange = useCallback((name: string, value: number) => {
+    const clamped = Math.max(0, Math.min(1, value));
+    setBotoxValue(name, clamped);
+    const newState: SimulationState = {
+      fillerValues: stateRef.current.fillerValues,
+      botoxValues: { ...stateRef.current.botoxValues, [name]: clamped },
+    };
+    simulatorRef.current?.updateSimulation(newState);
+  }, [setBotoxValue]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -164,8 +191,8 @@ export default function MeshDemoPage() {
             <div className="lg:col-span-1">
               <SimulationControls
                 state={state}
-                onFillerChange={setFillerValue}
-                onBotoxChange={setBotoxValue}
+                onFillerChange={handleFillerChange}
+                onBotoxChange={handleBotoxChange}
                 onReset={reset}
               />
             </div>

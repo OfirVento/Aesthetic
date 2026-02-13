@@ -15,6 +15,7 @@ interface MeshSimulatorProps {
 
 export interface MeshSimulatorRef {
   exportImage: () => string | null;
+  updateSimulation: (state: SimulationState) => void;
 }
 
 export const MeshSimulator = forwardRef<MeshSimulatorRef, MeshSimulatorProps>(
@@ -36,11 +37,16 @@ export const MeshSimulator = forwardRef<MeshSimulatorRef, MeshSimulatorProps>(
     const [dimensions, setDimensions] = useState({ width: 512, height: 512 });
     const initializingRef = useRef(false);
 
-    // Expose methods via ref
+    // Expose methods via ref — updateSimulation bypasses React effects
     useImperativeHandle(ref, () => ({
       exportImage: () => {
         if (!rendererRef.current) return null;
         return rendererRef.current.toDataURL("image/png");
+      },
+      updateSimulation: (state: SimulationState) => {
+        if (rendererRef.current) {
+          rendererRef.current.updateSimulation(state);
+        }
       },
     }));
 

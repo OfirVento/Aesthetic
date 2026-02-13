@@ -1,18 +1,13 @@
-# Aesthetic — Full Product Spec for AI Builder
+# Aesthetic — Full Product Spec
 
 ## What To Build
 
 A clinical aesthetic visualization web app where
 practitioners upload a patient's face photo, then
 simulate injectable cosmetic treatments (fillers,
-Botox) in real-time. Two simulation approaches:
-
-1. **AI Image Generation** (Gemini) — select a face
-   region, adjust intensity sliders, click Apply,
-   and AI generates a realistic edited image
-2. **Real-time 3D Mesh** — slider movements instantly
-   deform the face image using WebGL vertex
-   displacement (no API call needed)
+Botox) in real-time using 3D mesh deformation.
+Sliders instantly deform the face image using WebGL
+vertex displacement — no API calls, no AI generation.
 
 ---
 
@@ -24,7 +19,7 @@ Botox) in real-time. Two simulation approaches:
 
 ---
 
-## User Flow (3 Steps)
+## User Flow
 
 ### Step 1: Capture
 - Landing page with "Begin Face Scan" (camera) or
@@ -32,18 +27,13 @@ Botox) in real-time. Two simulation approaches:
 - Photo captured as base64 data URL
 - Auto-transition to Step 2
 
-### Step 2: Simulation
+### Step 2: Simulation (/mesh-demo)
 - MediaPipe Face Mesh detects 468 facial landmarks
-- User selects a face region from hierarchical menu:
-  - 6 categories → 21 sub-regions
-  - Mask overlay highlights selected area
-- User adjusts 2-3 sliders per region (0-100%)
-- Two modes:
-  - **AI mode**: Click "Apply Simulation" → builds
-    prompt from slider values → calls Gemini API →
-    returns edited image → stored in version history
-  - **Mesh mode** (/mesh-demo): Sliders instantly
-    deform face via WebGL grid displacement
+- Photo rendered as WebGL texture on deformable grid
+- User adjusts filler sliders (0-100%) per region
+- Face deforms in real-time showing simulated effect
+- User adjusts Botox sliders for wrinkle smoothing
+- Export result as PNG
 
 ### Step 3: Results
 - Visual mapping: final image with color-coded
@@ -92,61 +82,10 @@ Botox) in real-time. Two simulation approaches:
 
 ---
 
-## AI Image Generation Approach
+## 3D Mesh Simulation (Core Feature)
 
-### Prompt System (2 levels)
-
-**System Prompt** (wrapper):
-- Medical context for injectable cosmetics
-- Rules: no makeup, no filters, preserve identity,
-  background, skin tone. Structural changes ONLY.
-- Contains `{TASK_PROMPT}` placeholder
-
-**Task Prompt** (per-region, dynamic):
-- Built from slider values
-- Maps percentage to intensity level:
-  - 1-25% = "slight"
-  - 26-50% = "noticeable"
-  - 51-75% = "significant"
-  - 76-100% = "dramatic"
-- Each intensity has a specific prompt text, e.g.:
-  - Slight: "Slightly increase upper lip thickness
-    while keeping exact same natural lip color"
-  - Dramatic: "Dramatically augment upper lip
-    fullness while keeping same natural lip color"
-
-**Prompt Config**:
-- ~1800 lines of medical prompts covering all 21
-  sub-regions × 2-3 controls × 4 intensity levels
-- Fully editable via Settings modal (persisted to
-  localStorage)
-
-### API Flow
-```
-Slider values + selected region
-  → buildInpaintPrompt() — maps values to text
-  → buildFullPrompt() — wraps with system prompt
-  → generateRegionMask() — creates B&W mask from
-    landmarks (white = edit area)
-  → POST /api/inpaint — sends image + prompt + mask
-  → Gemini 2.5 Flash generates edited image
-  → Response stored in version history
-```
-
-### Mask Generation
-- Uses MediaPipe 468 facial landmarks
-- Each sub-region has ordered landmark indices
-  defining a closed polygon
-- Canvas draws filled polygon → applies 8px
-  Gaussian feathering → exports as PNG data URL
-- Sent to Gemini as editing mask
-
----
-
-## 3D Mesh Simulation Approach
-
-### How It Should Work
-1. Photo loaded as WebGL texture on a 80×80 grid
+### How It Works
+1. Photo loaded as WebGL texture on an 80x80 grid
 2. MediaPipe landmarks mapped to grid coordinates
 3. Per filler slider:
    - Find grid vertices near affected landmarks
@@ -221,57 +160,23 @@ face area. Crude but simple.
 
 | Technology | Purpose |
 |-----------|---------|
-| Next.js 14+ | Framework, SSR, API routes |
+| Next.js 14+ | Framework, SSR, routing |
 | TypeScript | Type safety |
 | Tailwind CSS | Styling |
 | Zustand | State management |
 | Three.js | 3D WebGL rendering |
 | MediaPipe Face Mesh | 468 landmark detection |
-| Google Gemini API | AI image generation |
-| Fabric.js | Canvas manipulation (optional) |
 | Lucide React | Icons |
 
 ---
 
 ## Key Data Structures
 
-### SessionState (Zustand)
-```typescript
-{
-  step: "scan" | "simulation" | "results"
-  capturedImage: string | null     // base64
-  activeImage: string | null       // currently displayed
-  landmarks: LandmarkPoint[] | null // 468 points
-  selectedCategory: RegionCategory | null
-  selectedSubRegion: SubRegion | null
-  controlValues: Record<string, number> // 0-100
-  notes: string
-  history: VersionEntry[]
-  isProcessing: boolean
-  error: string | null
-}
-```
-
 ### SimulationState (3D mesh)
 ```typescript
 {
   fillerValues: Record<string, number>  // 0-1
   botoxValues: Record<string, number>   // 0-1
-}
-```
-
-### VersionEntry (history)
-```typescript
-{
-  id: string
-  timestamp: number
-  category, subRegion: string
-  controlValues: Record<string, number>
-  notes: string
-  prompt: string           // full prompt sent
-  inputImage: string       // base64
-  outputImage: string      // base64
-  maskData: string         // base64
 }
 ```
 
@@ -302,41 +207,6 @@ face area. Crude but simple.
 - Split view for before/after comparison
 - Right sidebar for controls
 - Bottom tray for version history
-- Modal for settings/prompt editing
-
----
-
-## API Endpoints
-
-### POST /api/inpaint
-**Request:**
-```json
-{
-  "imageDataUrl": "data:image/jpeg;base64,...",
-  "prompt": "Full prompt text",
-  "maskDataUrl": "data:image/png;base64,..." (optional)
-}
-```
-
-**Response:**
-```json
-{
-  "imageDataUrl": "data:image/png;base64,...",
-  "debugPrompt": "Echo of prompt sent"
-}
-```
-
-**Error handling:**
-- Retry 3x with exponential backoff on 503
-- Returns 400 for missing required fields
-- Returns 500 for API/server errors
-
----
-
-## Environment Variables
-```
-GEMINI_API_KEY=your-key-here  (server-side only)
-```
 
 ---
 
@@ -345,24 +215,20 @@ GEMINI_API_KEY=your-key-here  (server-side only)
 - Production URL: cl-aesthetic.vercel.app
 - No database needed (client-side state only)
 - No auth (demo/POC)
+- No API keys needed for mesh-only approach
 
 ---
 
 ## What To Build First (Priority Order)
 
-1. **Landing page + image capture/upload**
-2. **MediaPipe face detection + landmark extraction**
-3. **Region selection UI** (6 categories → 21 subs)
-4. **Mask generation from landmarks**
-5. **Prompt system** (build prompts from sliders)
-6. **Gemini API integration** (/api/inpaint route)
-7. **Before/after comparison view**
-8. **Version history tray**
-9. **Results page** (visual map + clinical recipe)
-10. **Real-time 3D mesh simulation** (research best
-    approach — see options above)
-11. **Settings/prompt editor modal**
-12. **Export/print functionality**
+1. **Fix slider bug** — debug and fix the useEffect
+   that connects sliders to mesh deformation
+2. **Landing page + image capture/upload**
+3. **MediaPipe face detection + landmark extraction**
+4. **3D mesh simulation with working sliders**
+5. **Botox zone implementation** (fragment shader blur)
+6. **Results page** (visual map + clinical recipe)
+7. **Export/print functionality**
 
 ---
 
@@ -381,23 +247,13 @@ GEMINI_API_KEY=your-key-here  (server-side only)
    - The old API uses onResults callbacks; the new
      one returns results directly
 
-3. **Gemini model selection**
-   - gemini-2.5-flash-image (fast, good quality)
-   - gemini-2.5-pro (slower, potentially better)
-   - Test both for aesthetic edit quality
-
-4. **Prompt engineering for realistic results**
-   - Current prompts emphasize "no makeup, no color
-     changes, structural only"
-   - Test different prompt strategies for each region
-   - Consider few-shot examples with before/after
-
-5. **State management**
+3. **State management for real-time updates**
    - Zustand works well for this scope
    - Consider Jotai for more atomic state updates
-     (may help with the useEffect issue)
+   - Or bypass React state entirely for slider →
+     renderer communication
 
-6. **Persistence layer**
+4. **Persistence layer**
    - Currently no database (state lost on refresh)
    - Consider Supabase, PlanetScale, or local
      IndexedDB for session persistence
