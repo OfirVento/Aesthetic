@@ -8,8 +8,8 @@ face photo, then use sliders to preview how filler
 injections and Botox would look — in real-time,
 without AI image generation.
 
-**Production URL:** https://aesthetic-ruddy.vercel.app
-**Mesh Demo:** https://aesthetic-ruddy.vercel.app/mesh-demo
+**Production URL:** https://cl-aesthetic.vercel.app
+**Mesh Demo:** https://cl-aesthetic.vercel.app/mesh-demo
 **GitHub Repo:** https://github.com/OfirVento/Aesthetic
 **Vercel:** Connected to GitHub, auto-deploys from main
 
@@ -252,9 +252,9 @@ Possible causes to investigate:
 
 ## Environment Notes
 
-- Local project: ~/Projects/Aesthetic/ag-aesthetic
+- Local project: ~/Projects/Aesthetic/cl-aesthetic
 - GitHub: OfirVento/Aesthetic (main branch)
-- Vercel: aesthetic-ruddy.vercel.app (connected to GitHub)
+- Vercel: cl-aesthetic.vercel.app (connected to GitHub)
 - Pushing to main auto-deploys to Vercel
 - The project may have a stop-hook-git-check.sh that
   keeps interrupting — find and delete it if it fires

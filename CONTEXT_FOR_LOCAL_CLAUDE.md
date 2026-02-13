@@ -44,7 +44,7 @@ and working in the codebase:
 ### Current Problem
 The changes exist on branch "mesh-deformation-fix" but
 have NOT been merged into "main". The Vercel production
-site (aesthetic-ruddy.vercel.app) deploys from "main",
+site (cl-aesthetic.vercel.app) deploys from "main",
 so it still has the old stub code where sliders do
 nothing.
 
@@ -72,7 +72,7 @@ which needs debugging.
    npm run build
 
 5. After pushing, the Vercel site at
-   aesthetic-ruddy.vercel.app/mesh-demo should
+   cl-aesthetic.vercel.app/mesh-demo should
    automatically redeploy with the working sliders.
 
 ### Important Notes

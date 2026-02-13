@@ -342,7 +342,7 @@ GEMINI_API_KEY=your-key-here  (server-side only)
 
 ## Deployment
 - Vercel (connected to GitHub, auto-deploys from main)
-- Production URL: aesthetic-ruddy.vercel.app
+- Production URL: cl-aesthetic.vercel.app
 - No database needed (client-side state only)
 - No auth (demo/POC)
 
