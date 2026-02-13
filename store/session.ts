@@ -80,7 +80,7 @@ export const useStore = create<SessionStore>()(
             }))
         }),
         {
-            name: 'ag-aesthetic-storage',
+            name: 'cl-aesthetic-storage',
             storage: createJSONStorage(() => localStorage),
             partialize: (state) => ({
                 history: state.history,
