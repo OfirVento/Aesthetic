@@ -13,7 +13,7 @@ const GRID_RES = 80;
  * How far (in normalised -1…1 space) a grid vertex can be from a
  * landmark and still be affected by its morph target.
  */
-const INFLUENCE_RADIUS = 0.10;
+const INFLUENCE_RADIUS = 0.28;
 
 export class MeshRenderer {
   private scene: THREE.Scene;
