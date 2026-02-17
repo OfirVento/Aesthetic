@@ -45,13 +45,20 @@ export const faceFragmentShader = `
     return inX * inY;
   }
 
+  // Quintic smootherstep: zero 1st AND 2nd derivatives at boundaries
+  // Eliminates visible "crease" artifacts at Botox zone edges
+  float smootherstep(float edge0, float edge1, float x) {
+    float t = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
+    return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+  }
+
   float zoneWeight(vec2 uv, vec4 zone) {
     if (zone.x >= zone.y || zone.z >= zone.w) return 0.0;
     float dx = min(uv.x - zone.x, zone.y - uv.x);
     float dy = min(uv.y - zone.z, zone.w - uv.y);
     float margin = 0.03;
-    float wx = smoothstep(0.0, margin, dx);
-    float wy = smoothstep(0.0, margin, dy);
+    float wx = smootherstep(0.0, margin, dx);
+    float wy = smootherstep(0.0, margin, dy);
     return inZone(uv, zone) * wx * wy;
   }
 
