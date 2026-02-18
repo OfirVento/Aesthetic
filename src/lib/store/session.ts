@@ -9,6 +9,11 @@ import type {
   VersionEntry,
 } from "@/types";
 import type { LandmarkPoint } from "@/lib/mediapipe";
+import type { SimulationState } from "@/lib/meshSimulation/types";
+import {
+  mapControlsToSimulation,
+  buildCumulativeSimulation,
+} from "@/lib/meshSimulation/controlMapping";
 
 interface SessionStore {
   // Navigation
@@ -56,6 +61,9 @@ interface SessionStore {
   history: VersionEntry[];
   addVersion: (entry: VersionEntry) => void;
 
+  // Mesh simulation (derived from controls + history)
+  meshSimulationState: SimulationState;
+
   // Processing
   isProcessing: boolean;
   setIsProcessing: (val: boolean) => void;
@@ -67,6 +75,8 @@ interface SessionStore {
   // Reset
   reset: () => void;
 }
+
+const EMPTY_SIM_STATE: SimulationState = { fillerValues: {}, botoxValues: {} };
 
 const initialState = {
   step: "scan" as AppStep,
@@ -85,9 +95,32 @@ const initialState = {
   controlValues: {},
   notes: "",
   history: [] as VersionEntry[],
+  meshSimulationState: EMPTY_SIM_STATE,
   isProcessing: false,
   error: null,
 };
+
+/**
+ * Recompute the mesh simulation state from history + current live slider values.
+ * Called whenever controlValues, selectedSubRegion, or history change.
+ */
+function computeMeshState(
+  history: VersionEntry[],
+  selectedSubRegion: SubRegion | null,
+  controlValues: RegionControlValues
+): SimulationState {
+  // Build cumulative state from all applied history entries
+  let state = buildCumulativeSimulation(
+    history.map((h) => ({ subRegion: h.subRegion, controlValues: h.controlValues }))
+  );
+
+  // Overlay current live slider values as a preview
+  if (selectedSubRegion && Object.values(controlValues).some((v) => v > 0)) {
+    state = mapControlsToSimulation(selectedSubRegion, controlValues, state);
+  }
+
+  return state;
+}
 
 export const useSessionStore = create<SessionStore>((set) => ({
   ...initialState,
@@ -101,6 +134,7 @@ export const useSessionStore = create<SessionStore>((set) => ({
       step: "simulation",
       landmarks: null,
       isDetecting: true,
+      meshSimulationState: EMPTY_SIM_STATE,
     }),
 
   setActiveImage: (image) => set({ activeImage: image }),
@@ -118,13 +152,16 @@ export const useSessionStore = create<SessionStore>((set) => ({
     })),
 
   setSelectedSubRegion: (subRegion) =>
-    set({
+    set((state) => ({
       selectedSubRegion: subRegion,
       selectedRegion: subRegion, // Keep legacy field in sync
       controlValues: {},
       notes: "",
       maskOverlay: null,
-    }),
+      activeImage: null, // Clear Gemini result so mesh preview resumes
+      // Recompute with no live controls (sliders reset to 0)
+      meshSimulationState: computeMeshState(state.history, subRegion, {}),
+    })),
 
   toggleCategoryExpanded: (category) =>
     set((state) => ({
@@ -142,30 +179,50 @@ export const useSessionStore = create<SessionStore>((set) => ({
 
   // Legacy - maps to setSelectedSubRegion
   setSelectedRegion: (region) =>
-    set({
+    set((state) => ({
       selectedRegion: region,
       selectedSubRegion: region,
       controlValues: {},
       notes: "",
       maskOverlay: null,
-    }),
+      activeImage: null,
+      meshSimulationState: computeMeshState(state.history, region, {}),
+    })),
 
   setMaskOverlay: (overlay) => set({ maskOverlay: overlay }),
 
   setControlValue: (key, value) =>
-    set((state) => ({
-      controlValues: { ...state.controlValues, [key]: value },
-    })),
+    set((state) => {
+      const newControlValues = { ...state.controlValues, [key]: value };
+      return {
+        controlValues: newControlValues,
+        meshSimulationState: computeMeshState(
+          state.history,
+          state.selectedSubRegion,
+          newControlValues
+        ),
+      };
+    }),
 
-  resetControls: () => set({ controlValues: {}, notes: "" }),
+  resetControls: () =>
+    set((state) => ({
+      controlValues: {},
+      notes: "",
+      meshSimulationState: computeMeshState(state.history, state.selectedSubRegion, {}),
+    })),
 
   setNotes: (notes) => set({ notes }),
 
   addVersion: (entry) =>
-    set((state) => ({
-      history: [...state.history, entry],
-      activeImage: entry.outputImage,
-    })),
+    set((state) => {
+      const newHistory = [...state.history, entry];
+      return {
+        history: newHistory,
+        activeImage: entry.outputImage,
+        // Recompute cumulative mesh state with the new history entry
+        meshSimulationState: computeMeshState(newHistory, state.selectedSubRegion, state.controlValues),
+      };
+    }),
 
   setIsProcessing: (val) => set({ isProcessing: val }),
 

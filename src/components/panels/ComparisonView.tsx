@@ -1,16 +1,37 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, type Ref } from "react";
 import { useSessionStore } from "@/lib/store/session";
+import { MeshSimulator } from "@/components/simulation/MeshSimulator";
+import type { MeshSimulatorRef } from "@/components/simulation/MeshSimulator";
 
-export default function ComparisonView() {
-  const { capturedImage, activeImage, isProcessing, maskOverlay, selectedRegion, controlValues, selectedSubRegion } =
-    useSessionStore();
+interface ComparisonViewProps {
+  meshRef?: Ref<MeshSimulatorRef>;
+}
+
+export default function ComparisonView({ meshRef }: ComparisonViewProps) {
+  const {
+    capturedImage,
+    activeImage,
+    isProcessing,
+    maskOverlay,
+    selectedRegion,
+    controlValues,
+    selectedSubRegion,
+    landmarks,
+    meshSimulationState,
+  } = useSessionStore();
+
+  const [meshReady, setMeshReady] = useState(false);
+  const [meshError, setMeshError] = useState(false);
 
   // Show a visual hint on the Design panel when sliders have values but haven't been applied yet
   const hasUnappliedChanges = useMemo(() => {
     return selectedSubRegion && Object.values(controlValues).some((v) => v > 0);
   }, [selectedSubRegion, controlValues]);
+
+  // Show live mesh preview when user is adjusting sliders (no Gemini result yet)
+  const showMeshPreview = !activeImage && capturedImage && landmarks && !meshError;
 
   return (
     <div className="flex-1 p-6 flex gap-6 min-h-0 items-stretch justify-center">
@@ -58,6 +79,7 @@ export default function ComparisonView() {
           Design
         </span>
         <div className="flex-1 rounded-[32px] overflow-hidden bg-white shadow-xl border border-stone-200 relative min-h-0 group">
+          {/* Processing spinner overlay */}
           {isProcessing && (
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/40 backdrop-blur-md">
               <div className="flex flex-col items-center gap-3">
@@ -68,19 +90,55 @@ export default function ComparisonView() {
               </div>
             </div>
           )}
-          <img
-            src={activeImage || capturedImage || ""}
-            className={`w-full h-full object-contain group-hover:scale-[1.02] transition-all duration-1000 ${
-              isProcessing ? "opacity-30 blur-sm" : "opacity-100"
+
+          {/* Gemini result layer — visible when activeImage exists */}
+          <div
+            className={`absolute inset-0 transition-opacity duration-500 z-[1] ${
+              activeImage && !hasUnappliedChanges ? "opacity-100" : "opacity-0 pointer-events-none"
             }`}
-            alt="Simulation"
-          />
-          <div className="absolute top-5 right-5 px-4 py-2 bg-stone-900/90 backdrop-blur-md rounded-full text-[10px] font-black tracking-widest uppercase text-white/95 border border-white/10 shadow-lg">
-            Active Design
+          >
+            {activeImage && (
+              <img
+                src={activeImage}
+                className="w-full h-full object-contain"
+                alt="AI Generated"
+              />
+            )}
           </div>
+
+          {/* Live mesh preview layer */}
+          {showMeshPreview ? (
+            <div className="w-full h-full flex items-center justify-center">
+              <MeshSimulator
+                ref={meshRef}
+                imageDataUrl={capturedImage}
+                simulationState={meshSimulationState}
+                landmarks={landmarks}
+                fitContainer
+                className="w-full h-full"
+                onReady={() => setMeshReady(true)}
+                onError={() => setMeshError(true)}
+              />
+            </div>
+          ) : (
+            <img
+              src={activeImage || capturedImage || ""}
+              className={`w-full h-full object-contain group-hover:scale-[1.02] transition-all duration-1000 ${
+                isProcessing ? "opacity-30 blur-sm" : "opacity-100"
+              }`}
+              alt="Simulation"
+            />
+          )}
+
+          {/* Badge */}
+          <div className="absolute top-5 right-5 z-[2] px-4 py-2 bg-stone-900/90 backdrop-blur-md rounded-full text-[10px] font-black tracking-widest uppercase text-white/95 border border-white/10 shadow-lg">
+            {activeImage && !hasUnappliedChanges ? "AI Generated" : meshReady ? "Live Preview" : "Active Design"}
+          </div>
+
+          {/* Unapplied changes hint */}
           {hasUnappliedChanges && !isProcessing && (
-            <div className="absolute bottom-5 left-1/2 -translate-x-1/2 px-4 py-2 bg-amber-500/90 backdrop-blur-md rounded-full text-[9px] font-black tracking-widest uppercase text-white shadow-lg animate-pulse">
-              Press Apply to Generate
+            <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-[2] px-4 py-2 bg-amber-500/90 backdrop-blur-md rounded-full text-[9px] font-black tracking-widest uppercase text-white shadow-lg animate-pulse">
+              Press Apply for AI Quality
             </div>
           )}
         </div>

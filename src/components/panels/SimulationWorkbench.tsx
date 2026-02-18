@@ -8,6 +8,7 @@ import { getSubRegionConfig, getCategoryForSubRegion } from "@/components/contro
 import { detectFaceLandmarks } from "@/lib/mediapipe";
 import { generateRegionMask, generateRegionOverlay, maskToDataURL } from "@/lib/masks";
 import { generateEditedImage } from "@/lib/api/gemini";
+import type { MeshSimulatorRef } from "@/components/simulation/MeshSimulator";
 import RegionPresets from "@/components/canvas/RegionPresets";
 import ContextualPanel from "@/components/controls/ContextualPanel";
 import ComparisonView from "./ComparisonView";
@@ -26,6 +27,7 @@ export default function SimulationWorkbench() {
     setIsProcessing,
     setLandmarks,
     setMaskOverlay,
+    setActiveImage,
     setError,
     addVersion,
     setStep,
@@ -34,6 +36,7 @@ export default function SimulationWorkbench() {
   const { prompts } = usePromptsStore();
 
   const imageRef = useRef<HTMLImageElement | null>(null);
+  const meshSimulatorRef = useRef<MeshSimulatorRef>(null);
 
   // Run face detection when image is loaded
   const runFaceDetection = useCallback(async () => {
@@ -92,6 +95,12 @@ export default function SimulationWorkbench() {
   const handleApply = async () => {
     if (!selectedSubRegion || !hasValues || !capturedImage) return;
 
+    // Capture mesh preview immediately for instant feedback
+    const meshPreview = meshSimulatorRef.current?.exportImage() ?? null;
+    if (meshPreview) {
+      setActiveImage(meshPreview);
+    }
+
     // Build the task prompt using configurable prompts from store
     const taskPrompt = buildInpaintPrompt(selectedSubRegion, controlValues, prompts, notes);
     if (!taskPrompt) {
@@ -142,14 +151,38 @@ export default function SimulationWorkbench() {
         prompt: fullPrompt,
         inputImage: sourceImage,
         outputImage,
+        meshPreviewImage: meshPreview ?? undefined,
         maskData,
       });
     } catch (err) {
       console.error("Simulation error:", err);
+
+      // If Gemini fails but we have a mesh preview, save that as the output
+      if (meshPreview) {
+        const subRegionConfig = getSubRegionConfig(selectedSubRegion);
+        const categoryConfig = getCategoryForSubRegion(selectedSubRegion);
+        addVersion({
+          id: `v-${Date.now()}`,
+          timestamp: Date.now(),
+          category: categoryConfig?.id ?? "lips",
+          categoryLabel: categoryConfig?.label ?? "Unknown",
+          subRegion: selectedSubRegion,
+          subRegionLabel: subRegionConfig?.label ?? "Unknown",
+          region: selectedSubRegion,
+          regionLabel: subRegionConfig?.label ?? "Unknown",
+          controlValues: { ...controlValues },
+          notes,
+          prompt: "(mesh preview — AI generation failed)",
+          inputImage: capturedImage,
+          outputImage: meshPreview,
+          meshPreviewImage: meshPreview,
+        });
+      }
+
       setError(
         err instanceof Error
           ? err.message
-          : "Generation failed. Please try again."
+          : "AI generation failed. Mesh preview saved as fallback."
       );
     } finally {
       setIsProcessing(false);
@@ -196,7 +229,7 @@ export default function SimulationWorkbench() {
 
       {/* Main content: Comparison + Contextual Panel */}
       <div className="flex-1 flex overflow-hidden min-h-0">
-        <ComparisonView />
+        <ComparisonView meshRef={meshSimulatorRef} />
 
         {selectedSubRegion && (
           <div className="w-80 p-4 overflow-y-auto no-scrollbar shrink-0">

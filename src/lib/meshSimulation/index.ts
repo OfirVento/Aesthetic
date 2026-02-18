@@ -8,6 +8,10 @@ export {
   getBotoxZone,
   getBotoxZonesForRegion,
 } from "./morphTargets";
+export {
+  mapControlsToSimulation,
+  buildCumulativeSimulation,
+} from "./controlMapping";
 export type {
   MorphTarget,
   BotoxZone,

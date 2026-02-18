@@ -4,10 +4,15 @@ import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardR
 import { MeshRenderer, FILLER_MORPH_TARGETS, BOTOX_ZONES } from "@/lib/meshSimulation";
 import type { SimulationState } from "@/lib/meshSimulation";
 import { detectFaceLandmarks } from "@/lib/mediapipe";
+import type { LandmarkPoint } from "@/lib/mediapipe";
 
 interface MeshSimulatorProps {
   imageDataUrl: string;
   simulationState: SimulationState;
+  /** Pre-detected landmarks — skip face detection if provided */
+  landmarks?: LandmarkPoint[] | null;
+  /** Scale canvas to fill parent container (use with CSS positioning) */
+  fitContainer?: boolean;
   onReady?: () => void;
   onError?: (error: Error) => void;
   className?: string;
@@ -23,6 +28,8 @@ export const MeshSimulator = forwardRef<MeshSimulatorRef, MeshSimulatorProps>(
     {
       imageDataUrl,
       simulationState,
+      landmarks: landmarksProp,
+      fitContainer = false,
       onReady,
       onError,
       className = "",
@@ -59,6 +66,7 @@ export const MeshSimulator = forwardRef<MeshSimulatorRef, MeshSimulatorProps>(
 
         try {
           setError(null);
+          setIsInitialized(false);
 
           // Clean up previous renderer
           if (rendererRef.current) {
@@ -77,8 +85,8 @@ export const MeshSimulator = forwardRef<MeshSimulatorRef, MeshSimulatorProps>(
           });
 
           // Calculate dimensions maintaining aspect ratio
-          const maxWidth = 600;
-          const maxHeight = 600;
+          const maxWidth = fitContainer ? 800 : 600;
+          const maxHeight = fitContainer ? 800 : 600;
           let width = img.naturalWidth;
           let height = img.naturalHeight;
 
@@ -93,8 +101,8 @@ export const MeshSimulator = forwardRef<MeshSimulatorRef, MeshSimulatorProps>(
 
           setDimensions({ width: Math.round(width), height: Math.round(height) });
 
-          // Detect face landmarks
-          const landmarks = await detectFaceLandmarks(img);
+          // Use pre-detected landmarks if available, otherwise detect
+          const landmarks = landmarksProp ?? await detectFaceLandmarks(img);
           if (!landmarks) {
             throw new Error("No face detected in image");
           }
@@ -126,19 +134,38 @@ export const MeshSimulator = forwardRef<MeshSimulatorRef, MeshSimulatorProps>(
           rendererRef.current = null;
         }
       };
-    // Only re-run when imageDataUrl changes, not simulationState
+    // Only re-run when imageDataUrl or landmarks prop changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [imageDataUrl]);
+    }, [imageDataUrl, landmarksProp]);
 
     // Update renderer when simulation state changes (separate effect)
     useEffect(() => {
-      const hasFillers = Object.keys(simulationState.fillerValues).length > 0;
-      const hasBotox = Object.keys(simulationState.botoxValues).length > 0;
-      console.log("[MeshSimulator] Effect fired. isInitialized:", isInitialized, "hasRenderer:", !!rendererRef.current, "hasFillers:", hasFillers, "hasBotox:", hasBotox);
       if (rendererRef.current && isInitialized) {
         rendererRef.current.updateSimulation(simulationState);
       }
     }, [simulationState, isInitialized]);
+
+    // Handle container resizing for fitContainer mode
+    useEffect(() => {
+      if (!fitContainer || !containerRef.current) return;
+
+      const observer = new ResizeObserver((entries) => {
+        const { width, height } = entries[0].contentRect;
+        if (width > 0 && height > 0 && rendererRef.current) {
+          const newW = Math.min(Math.round(width), 800);
+          const newH = Math.min(Math.round(height), 800);
+          setDimensions({ width: newW, height: newH });
+          rendererRef.current.resize(newW, newH);
+        }
+      });
+
+      observer.observe(containerRef.current);
+      return () => observer.disconnect();
+    }, [fitContainer]);
+
+    const canvasStyle = fitContainer
+      ? { width: "100%", height: "100%", objectFit: "contain" as const, backgroundColor: "#1a1a2e" }
+      : { width: dimensions.width, height: dimensions.height, backgroundColor: "#1a1a2e" };
 
     return (
       <div ref={containerRef} className={`relative ${className}`}>
@@ -148,33 +175,27 @@ export const MeshSimulator = forwardRef<MeshSimulatorRef, MeshSimulatorProps>(
           width={dimensions.width}
           height={dimensions.height}
           className="rounded-lg block"
-          style={{
-            width: dimensions.width,
-            height: dimensions.height,
-            backgroundColor: '#1a1a2e'
-          }}
+          style={canvasStyle}
         />
 
         {/* Loading overlay - shown on top of canvas */}
         {!isInitialized && !error && (
-          <div
-            className="absolute inset-0 flex items-center justify-center bg-gray-900/80 rounded-lg"
-          >
-            <div className="text-center text-gray-400">
-              <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2" />
-              <p>Detecting face...</p>
+          <div className="absolute inset-0 flex items-center justify-center bg-white/60 backdrop-blur-sm rounded-lg">
+            <div className="text-center">
+              <div className="animate-spin w-8 h-8 border-2 border-stone-900 border-t-transparent rounded-full mx-auto mb-2" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-stone-400">
+                Initializing 3D Preview...
+              </span>
             </div>
           </div>
         )}
 
         {/* Error overlay */}
         {error && (
-          <div
-            className="absolute inset-0 flex items-center justify-center bg-red-900/20 rounded-lg border border-red-500/50"
-          >
-            <div className="text-center text-red-400 p-4">
-              <p className="font-medium">Failed to initialize</p>
-              <p className="text-sm mt-1">{error}</p>
+          <div className="absolute inset-0 flex items-center justify-center bg-red-900/10 rounded-lg border border-red-300/50">
+            <div className="text-center text-red-500 p-4">
+              <p className="text-xs font-bold">3D Preview Unavailable</p>
+              <p className="text-[10px] mt-1 text-red-400">{error}</p>
             </div>
           </div>
         )}

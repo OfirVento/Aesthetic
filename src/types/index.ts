@@ -109,6 +109,7 @@ export interface VersionEntry {
   prompt: string;
   inputImage: string;
   outputImage: string;
+  meshPreviewImage?: string;
   maskData?: string;
 }
 
