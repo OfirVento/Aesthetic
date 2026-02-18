@@ -50,9 +50,7 @@ export class MeshRenderer {
       preserveDrawingBuffer: true,
     });
     this.renderer.setSize(width, height, false);
-    this.renderer.setPixelRatio(
-      typeof window !== "undefined" ? window.devicePixelRatio : 1
-    );
+    this.renderer.setPixelRatio(1);
     this.renderer.setClearColor(0x1a1a2e, 1);
 
     this.scene = new THREE.Scene();
@@ -200,9 +198,7 @@ export class MeshRenderer {
         // Smooth falloff (1 at landmark, 0 at INFLUENCE_RADIUS)
         const weight =
           1 - minDist / INFLUENCE_RADIUS;
-        // Quintic smootherstep: zero 1st AND 2nd derivatives at boundaries
-        // Eliminates subtle crease artifacts at deformation zone edges
-        const smoothWeight = weight * weight * weight * (weight * (weight * 6 - 15) + 10);
+        const smoothWeight = weight * weight * (3 - 2 * weight); // smoothstep
 
         const disp = target.maxDisplacement * intensity * smoothWeight;
 
