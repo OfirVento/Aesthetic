@@ -108,14 +108,12 @@ export default function ComparisonView({ meshRef }: ComparisonViewProps) {
 
           {/* Live mesh preview layer */}
           {showMeshPreview ? (
-            <div className="w-full h-full flex items-center justify-center">
+            <div className="w-full h-full flex items-center justify-center overflow-hidden">
               <MeshSimulator
                 ref={meshRef}
                 imageDataUrl={capturedImage}
                 simulationState={meshSimulationState}
-                landmarks={landmarks}
-                fitContainer
-                className="w-full h-full"
+                className="mx-auto"
                 onReady={() => setMeshReady(true)}
                 onError={() => setMeshError(true)}
               />
