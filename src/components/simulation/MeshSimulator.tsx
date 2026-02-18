@@ -42,6 +42,7 @@ export const MeshSimulator = forwardRef<MeshSimulatorRef, MeshSimulatorProps>(
     const [isInitialized, setIsInitialized] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [dimensions, setDimensions] = useState({ width: 512, height: 512 });
+    const imageAspectRef = useRef(1); // natural width / natural height
     const initializingRef = useRef(false);
 
     // Expose methods via ref — updateSimulation bypasses React effects
@@ -83,6 +84,9 @@ export const MeshSimulator = forwardRef<MeshSimulatorRef, MeshSimulatorProps>(
             img.onerror = () => reject(new Error("Failed to load image"));
             img.src = imageDataUrl;
           });
+
+          // Store aspect ratio for ResizeObserver
+          imageAspectRef.current = img.naturalWidth / img.naturalHeight;
 
           // Calculate dimensions maintaining aspect ratio
           const maxWidth = fitContainer ? 800 : 600;
@@ -150,10 +154,20 @@ export const MeshSimulator = forwardRef<MeshSimulatorRef, MeshSimulatorProps>(
       if (!fitContainer || !containerRef.current) return;
 
       const observer = new ResizeObserver((entries) => {
-        const { width, height } = entries[0].contentRect;
-        if (width > 0 && height > 0 && rendererRef.current) {
-          const newW = Math.min(Math.round(width), 800);
-          const newH = Math.min(Math.round(height), 800);
+        const { width: cw, height: ch } = entries[0].contentRect;
+        if (cw > 0 && ch > 0 && rendererRef.current) {
+          // Fit image aspect ratio inside the container (like object-fit: contain)
+          const aspect = imageAspectRef.current;
+          let newW: number, newH: number;
+          if (cw / ch > aspect) {
+            // Container is wider than image — height-limited
+            newH = Math.min(Math.round(ch), 800);
+            newW = Math.round(newH * aspect);
+          } else {
+            // Container is taller than image — width-limited
+            newW = Math.min(Math.round(cw), 800);
+            newH = Math.round(newW / aspect);
+          }
           setDimensions({ width: newW, height: newH });
           rendererRef.current.resize(newW, newH);
         }
@@ -163,19 +177,18 @@ export const MeshSimulator = forwardRef<MeshSimulatorRef, MeshSimulatorProps>(
       return () => observer.disconnect();
     }, [fitContainer]);
 
-    const canvasStyle = fitContainer
-      ? { width: "100%", height: "100%", objectFit: "contain" as const, backgroundColor: "#1a1a2e" }
-      : { width: dimensions.width, height: dimensions.height, backgroundColor: "#1a1a2e" };
-
     return (
-      <div ref={containerRef} className={`relative ${className}`}>
-        {/* Canvas - always visible once we have dimensions */}
+      <div
+        ref={containerRef}
+        className={`relative ${fitContainer ? "flex items-center justify-center" : ""} ${className}`}
+      >
+        {/* Canvas - sized explicitly to preserve aspect ratio */}
         <canvas
           ref={canvasRef}
           width={dimensions.width}
           height={dimensions.height}
           className="rounded-lg block"
-          style={canvasStyle}
+          style={{ width: dimensions.width, height: dimensions.height }}
         />
 
         {/* Loading overlay - shown on top of canvas */}

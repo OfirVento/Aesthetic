@@ -65,16 +65,20 @@ export function mapControlsToSimulation(
   // Each sub-region maps to exactly one morph target
   const target = targets[0];
 
-  // Compute weighted intensity from control values (0-100 → 0-1)
+  // Compute weighted intensity from ACTIVE controls only (0-100 → 0-1).
+  // Only non-zero controls participate in the average so that a single
+  // slider at 85% produces ~85% intensity, not diluted by idle controls.
   let weightedSum = 0;
-  let totalWeight = 0;
+  let activeWeight = 0;
   for (const [controlKey, weight] of Object.entries(weights)) {
     const value = controlValues[controlKey] ?? 0;
-    weightedSum += (value / 100) * weight;
-    totalWeight += weight;
+    if (value > 0) {
+      weightedSum += (value / 100) * weight;
+      activeWeight += weight;
+    }
   }
 
-  const intensity = totalWeight > 0 ? weightedSum / totalWeight : 0;
+  const intensity = activeWeight > 0 ? weightedSum / activeWeight : 0;
 
   return {
     fillerValues: {
